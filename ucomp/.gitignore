@@ -1,0 +1,10 @@
+specs/
+bin/
+*.output
+parser.c
+parser.h
+scanner.c
+comp
+vm
+*.o
+*.b
