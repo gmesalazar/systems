@@ -14,7 +14,7 @@
 
 #include "include/ush.h"
 #include "include/list.h"
-#include "include/util.h"
+#include "util.h"
 
 static int prompt(FILE *fp);
 static int unset(char *varName);
@@ -44,7 +44,7 @@ static void printHelp(void);
 static unsigned int histSizeGl = 0;
 static struct_t *varTableGl = NULL;
 static struct_t *historyGl = NULL;
-static bool verbose = FALSE;
+static bool verbose = false;
 
 static sigjmp_buf buf;
 
@@ -99,7 +99,7 @@ prompt(FILE *fp)
 
     struct_t *ps1;
 
-    while (TRUE) {
+    while (true) {
 
 	if (fp != stdin && feof(fp))
 	    break;
@@ -327,9 +327,9 @@ execCommand(struct_t *words)
     else if (strcmp(aux->wordData.word, "history") == 0)
 	printStruct(historyGl);
     else if (strcmp(aux->wordData.word, "verbose") == 0)
-	verbose = TRUE;
+	verbose = true;
     else if (strcmp(aux->wordData.word, "nonverbose") == 0)
-	verbose = FALSE;
+	verbose = false;
     else
 	return execWrapper(words);
     
@@ -581,31 +581,31 @@ handleRedirOperator(char **argv, bool *inRedir, bool *outRedir,
     char **aux = NULL;
     char *filename = NULL;
 
-    *inRedir = FALSE;
-    *outRedir = FALSE;
-    *outErrRedir = FALSE;
+    *inRedir = false;
+    *outRedir = false;
+    *outErrRedir = false;
 
     for (aux = argv; *aux; aux++) {
 	if (strcmp(*aux, "<") == 0) {
-	    *inRedir = TRUE;
+	    *inRedir = true;
 	    filename = strdup(*(aux + 1));
 	    *aux = NULL;
 	    break;
 	}
 	else if (strcmp(*aux, ">") == 0) {
-	    *outRedir = TRUE;
+	    *outRedir = true;
 	    filename = strdup(*(aux + 1));
 	    *aux = NULL;
 	    break;
 	} 
 	else if (strcmp(*aux, "&>") == 0) {
-	    *outErrRedir = TRUE;
+	    *outErrRedir = true;
 	    filename = strdup(*(aux + 1));
 	    *aux = NULL;
 	    break;
 	}
 	else if (strcmp(*aux, "&") == 0 && strcmp(*(aux + 1), ">") == 0) {
-	    *outErrRedir = TRUE;
+	    *outErrRedir = true;
 	    filename = strdup(*(aux + 2));
 	    *aux = NULL;
 	    break;
@@ -1028,7 +1028,7 @@ commLineOptions(int argc, char **argv)
     int i;
     for (i = 1; i < argc; i++) {
 	if (strcmp(argv[i], "-verbose") == 0)
-	    verbose = TRUE;
+	    verbose = true;
 	else if (strcmp(argv[i], "-version") == 0) {
 	    printf("mysh, version 1.0\n");
 	    exit(0);

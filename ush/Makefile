@@ -1,6 +1,6 @@
 CC      := gcc
 
-FLAGS   := -Wall -g -O2
+FLAGS   := -Wall -g -O2 -I../util
 
 MAIN    := ush
 LIST    := list
@@ -14,7 +14,7 @@ $(MAIN): $(UTIL).o $(LIST).o $(MAIN).o
 $(MAIN).o: $(MAIN).c
 	$(CC) $(FLAGS) -c $<
 
-$(UTIL).o: $(UTIL).c
+$(UTIL).o: ../util/$(UTIL).c
 	$(CC) $(FLAGS) -c $<
 
 $(LIST).o: $(LIST).c

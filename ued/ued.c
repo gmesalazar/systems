@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <signal.h>
 
-#include "util.h"
+#include "../util/util.h"
 
 /* colors */
 #define TBLU  "\033[34m" // blue

@@ -12,7 +12,7 @@ $(MAIN):    $(MAIN).o $(UTIL).o
 $(MAIN).o:  $(MAIN).c
 	        $(CC) -c $<
 
-$(UTIL).o:  $(UTIL).c
+$(UTIL).o:  ../util/$(UTIL).c
 	        $(CC) -c $<
 
 clean:

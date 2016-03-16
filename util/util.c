@@ -1,8 +1,57 @@
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
+#include <util.h>
 
-#include "include/util.h"
+void
+err_exit(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    exit(EXIT_FAILURE);
+}
+
+char *
+/* 
+   Check if a string starts with a given string
+
+   Return: pointer to the start of the contained string or NULL
+*/
+startsWith (const char *conts, const char *contd) 
+{
+    char *ptr = strstr(conts, contd);
+
+    if (strlen(contd) > strlen(conts))
+	return NULL;
+
+    return ptr && (*contd == *conts) ? ptr : NULL;
+}
+
+bool
+/*
+  Check if a string is a valid number (i.e., can be converted to
+  a number)
+
+  Return: TRUE if the string is a valid number, FALSE otherwise
+*/
+isNumber (char *str) 
+{
+    while(*str)
+	if ( !(isdigit(*str++)) )
+	    return false;
+    return true;
+}
+
+void
+/* 
+   Print message to stderr and exit
+*/
+fatal (char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    exit(-1);
+}
 
 ssize_t
 /* Ref: http://man7.org/tlpi/code/online/dist/sockets/read_line.c.html */
@@ -21,7 +70,7 @@ readLine(int fd, void *buffer, size_t sz)
     buff = buffer;
     totRead = 0;
 
-    while(TRUE) {
+    while(true) {
 	numRead = read(fd, &ch, 1);
 	
 	if (numRead == -1) {
@@ -74,10 +123,3 @@ writeLine(int sockd, const void *vptr, size_t n) {
     return n;
 }
 
-void
-printHelp(int argc, char **argv) 
-{
-    fprintf(stdout, "USAGE: %s <options>\n", argv[0]);
-    fprintf(stdout, "\n<options>\n");
-    fprintf(stdout, "-start: start the webserver\n-verbose: activate verbose mode\n");
-}

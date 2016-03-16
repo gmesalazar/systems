@@ -9,7 +9,7 @@
 #include <pthread.h>
 
 #include "include/uws.h"
-#include "include/util.h"
+#include "util.h"
 
 static void startServer(void);
 static void parseArgs(int argc, char **argv);
@@ -20,8 +20,9 @@ static void processRequest(int sfd, char *buff, ssize_t sz);
 static void processGETReq(int sfd, char **reqLine);
 static void *threadCallback(void *sfd);
 static void writeHeader(int sfd, const char *header[], int sz);
+static void printHelp(int argc, char **argv);
 
-static bool verbose = FALSE;
+static bool verbose = false;
 
 int 
 main(int argc, char **argv) 
@@ -42,7 +43,7 @@ parseArgs(int argc, char **argv)
 
     for (i = 1; i < argc; i++)
 	if (strcmp(argv[i], "-verbose") == 0)
-	    verbose = TRUE;
+	    verbose = false;
 
     for (i = 1; i < argc; i++)
 	if (strcmp(argv[i], "-start") == 0)
@@ -120,7 +121,7 @@ doNetworkingStuff(void)
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-    while (TRUE) {
+    while (true) {
     
 	connections[i] = accept(ssocket, (struct sockaddr*) &peerAddr, &addrSize);
 
@@ -164,7 +165,7 @@ readRequest(int sfd)
     nread = readLine(sfd, buff, (long) PACKET_BUFF_SZ);
 
     /* ignore request headers -- we don't need them :) */
-    while(TRUE) {
+    while(true) {
 	char tmp[PACKET_BUFF_SZ] = {'\0'};
 	readLine(sfd, tmp, (long) PACKET_BUFF_SZ);
 	if (strcmp(tmp, "\r\n") == 0)
@@ -260,4 +261,12 @@ logSockInfo(int sock, int inOut)
 	       ntohs(addrin->sin_port));
 
     fflush(stdout);
+}
+
+void
+printHelp(int argc, char **argv) 
+{
+    fprintf(stdout, "USAGE: %s <options>\n", argv[0]);
+    fprintf(stdout, "\n<options>\n");
+    fprintf(stdout, "-start: start the webserver\n-verbose: activate verbose mode\n");
 }
