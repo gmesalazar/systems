@@ -8,18 +8,11 @@
 #include <signal.h>
 
 #include "../util/util.h"
-
-/* colors */
-#define TBLU  "\033[34m" // blue
-#define TDEF  "\033[0m"  // default
-
-/* font style */
-#define TBOLD "\033[1m"
+#include "ued.h"
 
 #define PRG_ACRO "ued"
 #define PRG_NAME "micro editor"
 #define PRG_PRNT PRG_ACRO " - " PRG_NAME
-#define ME "Guilherme Salazar"
 
 static int draw_screen(void);
 static int save_cursor_pos(void);
@@ -40,45 +33,45 @@ int main(int argc, char **argv)
     if (set_sig_hand() != 0) {}; // just go ahead?
     draw_screen();
     
-    for(;;) {
+    while(true) {
+
         ch = getchar_noecho();
         switch(ch) {
             
         case  8: { // CTRL + H = 1 left
-            printf("\033[1D");
+            printf(TLT);
             break;
         }
             
         case 12: { // CTRL + L = 1 right
-            printf("\033[1C");
+            printf(TRT);
             break;
         }
 
         case 10: { // CTRL + J = 1 down
-            printf("\033[1B");
+            printf(TDW);
             break;
         }
 
         case 23: { // CTRL + W = 1 up
-            printf("\033[1A");
+            printf(TUP);
             break;
         }
 
         case  2: { // CTRK + B = erase char before 
-            printf("\033[1D");
-            printf("\033[1P");
+            printf(TLT TCLR);
             break;
         }
             
         case  4: { // CTRL + D = erase char at
-            printf("\033[1P");
+            printf(TCLR);
             break;
         }
 
         case  5: {  // CTRL + E = edit mode
             save_cursor_pos();
             goto_lastrow();
-            printf("%s", TBOLD);
+            printf("%s", TBLD);
             printf("%s", "-- INSERT --");
             printf("%s", TDEF);
             rest_cursor_pos();
@@ -137,8 +130,8 @@ int main(int argc, char **argv)
     return 0;
 }
 
-int
-/* by @brunoos */
+static int
+/* thanks to prof bruno silvestre */
 getchar_noecho(void)
 {
     int ch;
@@ -153,7 +146,7 @@ getchar_noecho(void)
     return ch;
 }
 
-int
+static int
 draw_screen(void)
 {
     int i;
@@ -172,8 +165,6 @@ draw_screen(void)
         if (i == w.ws_row / 2) {
             printf("\033[%d;%dH", i - 3, (int) w.ws_col / 2  - (int) strlen(PRG_PRNT) / 2);
             printf("%s", PRG_PRNT);
-            printf("\033[%d;%dH", i - 2, (int) w.ws_col / 2  - (int) strlen(ME) / 2);
-            printf("%s", ME);
             printf("\033[%d;%dH", i - 1, (int) w.ws_col / 2  - 1);
             printf(":)");
             printf("\033[%d;%dH", i, 1);
@@ -183,7 +174,7 @@ draw_screen(void)
     return 0;
 }
 
-int
+static int
 exec_colon_comm(const char *comm)
 {
     if (strcmp(comm, "quit") == 0 || strcmp(comm, "q") == 0) {
@@ -193,7 +184,7 @@ exec_colon_comm(const char *comm)
     return 0;
 }
 
-struct winsize
+static struct winsize
 get_winsize(void)
 {
     struct winsize w;
@@ -201,7 +192,7 @@ get_winsize(void)
     return w;
 }
 
-struct winsize
+static struct winsize
 goto_lastrow(void)
 {
     struct winsize w = get_winsize();
@@ -209,19 +200,19 @@ goto_lastrow(void)
     return w;
 }
 
-int
+static int
 save_cursor_pos(void)
 {
     return printf("\033[s");
 }
 
-int
+static int
 rest_cursor_pos(void)
 {
     return printf("\033[u");
 }
 
-void
+static void
 sig_hand(int sig_num)
 {
     if (sig_num == SIGINT) {
@@ -233,7 +224,7 @@ sig_hand(int sig_num)
     }
 }
 
-int
+static int
 set_sig_hand(void)
 {
     struct sigaction sa;

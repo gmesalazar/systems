@@ -1,5 +1,5 @@
 CC        := gcc
-CFLAGS    := -Wall -Wextra
+CFLAGS    := -Wall -Wextra -I../util
 
 MAIN      := ued
 UTIL      := util
