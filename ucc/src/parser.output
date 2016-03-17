@@ -1,0 +1,2528 @@
+State 108 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: prog $end
+
+    1 $@1: %empty
+
+    2 prog: $@1 funcvardecl progdecl
+
+    3 $@2: %empty
+
+    4 funcvardecl: type TID $@2 vardecl TSCOLON funcvardecl
+
+    5 $@3: %empty
+
+    6 funcvardecl: type TID TASSIGN expr $@3 vardecl TSCOLON funcvardecl
+    7            | type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON funcvardecl
+
+    8 $@4: %empty
+
+    9 funcvardecl: type TID TLPAREN $@4 paramlist TRPAREN block funcvardecl
+   10            | %empty
+
+   11 $@5: %empty
+
+   12 progdecl: TMAIN $@5 block
+
+   13 $@6: %empty
+
+   14 vardecl: TCOMMA TID $@6 vardecl
+
+   15 $@7: %empty
+
+   16 vardecl: TCOMMA TID TASSIGN expr $@7 vardecl
+   17        | TCOMMA TID TLBRACK TNUMLIT TRBRACK vardecl
+   18        | %empty
+
+   19 paramlist: paramlistcont
+   20          | %empty
+
+   21 paramlistcont: type TID
+
+   22 $@8: %empty
+
+   23 paramlistcont: type TID TCOMMA $@8 paramlistcont
+   24              | type TID TLBRACK TRBRACK
+   25              | type TID TLBRACK TRBRACK TCOMMA paramlistcont
+
+   26 $@9: %empty
+
+   27 block: TLBRACE $@9 vardecllist commlist TRBRACE
+   28      | TLBRACE TRBRACE
+
+   29 $@10: %empty
+
+   30 vardecllist: type TID $@10 vardecl TSCOLON vardecllist
+
+   31 $@11: %empty
+
+   32 vardecllist: type TID TASSIGN expr $@11 vardecl TSCOLON vardecllist
+   33            | type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON vardecllist
+   34            | %empty
+
+   35 type: TNUM
+   36     | TCHAR
+
+   37 commlist: comm
+   38         | comm commlist
+
+   39 comm: TSCOLON
+   40     | expr TSCOLON
+   41     | TRET expr TSCOLON
+
+   42 $@12: %empty
+
+   43 comm: TREAD lvalexpr $@12 readvars TSCOLON
+   44     | TWRIT expr TSCOLON
+   45     | TWRIT TSTRLIT TSCOLON
+   46     | ifstmt
+   47     | ifstmt TELSE comm
+
+   48 $@13: %empty
+
+   49 $@14: %empty
+
+   50 comm: TWHILE TLPAREN $@13 expr $@14 TRPAREN comm
+   51     | block
+
+   52 readvars: TCOMMA lvalexpr readvars
+   53         | %empty
+
+   54 $@15: %empty
+
+   55 ifstmt: TIF TLPAREN expr TRPAREN $@15 comm
+
+   56 expr: assignexpr
+
+   57 assignexpr: condexpr
+   58           | lvalexpr TASSIGN assignexpr
+
+   59 condexpr: orexpr
+
+   60 @16: %empty
+
+   61 @17: %empty
+
+   62 condexpr: orexpr TCONDIF @16 expr @17 TCONDELSE condexpr
+
+   63 orexpr: andexpr
+   64       | orexpr TOR andexpr
+
+   65 andexpr: eqexpr
+   66        | andexpr TAND eqexpr
+
+   67 eqexpr: ineqexpr
+   68       | eqexpr TEQ ineqexpr
+   69       | eqexpr TNEQ ineqexpr
+
+   70 ineqexpr: addexpr
+   71         | ineqexpr TLT addexpr
+   72         | ineqexpr TMT addexpr
+   73         | ineqexpr TLE addexpr
+   74         | ineqexpr TME addexpr
+
+   75 addexpr: multexpr
+   76        | addexpr TSUM multexpr
+   77        | addexpr TMIN multexpr
+
+   78 multexpr: unexpr
+   79         | multexpr TMULT unexpr
+   80         | multexpr TDIV unexpr
+   81         | multexpr TMOD unexpr
+
+   82 unexpr: primexpr
+   83       | TMIN primexpr
+   84       | TNOT primexpr
+
+   85 lvalexpr: TID
+   86         | TID TLBRACK expr TRBRACK
+
+   87 primexpr: TID
+
+   88 @18: %empty
+
+   89 primexpr: TID TLPAREN @18 exprlist TRPAREN
+   90         | TID TLBRACK expr TRBRACK
+   91         | TLPAREN expr TRPAREN
+   92         | TCHARLIT
+   93         | TNUMLIT
+
+   94 exprlist: assignexpr
+   95         | exprlist TCOMMA assignexpr
+   96         | %empty
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+TMAIN (258) 12
+TID (259) 4 6 7 9 14 16 17 21 23 24 25 30 32 33 85 86 87 89 90
+TNUM (260) 35
+TCHAR (261) 36
+TNUMLIT (262) 7 17 33 93
+TCHARLIT (263) 92
+TSTRLIT (264) 45
+TCOMMA (265) 14 16 17 23 25 52 95
+TSCOLON (266) 4 6 7 30 32 33 39 40 41 43 44 45
+TLBRACK (267) 7 17 24 25 33 86 90
+TRBRACK (268) 7 17 24 25 33 86 90
+TLPAREN (269) 9 50 55 89 91
+TRPAREN (270) 9 50 55 89 91
+TLBRACE (271) 27 28
+TRBRACE (272) 27 28
+TRET (273) 41
+TREAD (274) 43
+TWRIT (275) 44 45
+TIF (276) 55
+TWHILE (277) 50
+TELSE (278) 47
+TASSIGN (279) 6 16 32 58
+TCONDIF (280) 62
+TCONDELSE (281) 62
+TOR (282) 64
+TAND (283) 66
+TEQ (284) 68
+TNEQ (285) 69
+TLT (286) 71
+TMT (287) 72
+TLE (288) 73
+TME (289) 74
+TSUM (290) 76
+TMIN (291) 77 83
+TMULT (292) 79
+TDIV (293) 80
+TMOD (294) 81
+TNOT (295) 84
+
+
+Nonterminals, with rules where they appear
+
+$accept (41)
+    on left: 0
+prog (42)
+    on left: 2, on right: 0
+$@1 (43)
+    on left: 1, on right: 2
+funcvardecl (44)
+    on left: 4 6 7 9 10, on right: 2 4 6 7 9
+$@2 (45)
+    on left: 3, on right: 4
+$@3 (46)
+    on left: 5, on right: 6
+$@4 (47)
+    on left: 8, on right: 9
+progdecl (48)
+    on left: 12, on right: 2
+$@5 (49)
+    on left: 11, on right: 12
+vardecl (50)
+    on left: 14 16 17 18, on right: 4 6 7 14 16 17 30 32 33
+$@6 (51)
+    on left: 13, on right: 14
+$@7 (52)
+    on left: 15, on right: 16
+paramlist (53)
+    on left: 19 20, on right: 9
+paramlistcont (54)
+    on left: 21 23 24 25, on right: 19 23 25
+$@8 (55)
+    on left: 22, on right: 23
+block (56)
+    on left: 27 28, on right: 9 12 51
+$@9 (57)
+    on left: 26, on right: 27
+vardecllist (58)
+    on left: 30 32 33 34, on right: 27 30 32 33
+$@10 (59)
+    on left: 29, on right: 30
+$@11 (60)
+    on left: 31, on right: 32
+type (61)
+    on left: 35 36, on right: 4 6 7 9 21 23 24 25 30 32 33
+commlist (62)
+    on left: 37 38, on right: 27 38
+comm (63)
+    on left: 39 40 41 43 44 45 46 47 50 51, on right: 37 38 47 50 55
+$@12 (64)
+    on left: 42, on right: 43
+$@13 (65)
+    on left: 48, on right: 50
+$@14 (66)
+    on left: 49, on right: 50
+readvars (67)
+    on left: 52 53, on right: 43 52
+ifstmt (68)
+    on left: 55, on right: 46 47
+$@15 (69)
+    on left: 54, on right: 55
+expr (70)
+    on left: 56, on right: 6 16 32 40 41 44 50 55 62 86 90 91
+assignexpr (71)
+    on left: 57 58, on right: 56 58 94 95
+condexpr (72)
+    on left: 59 62, on right: 57 62
+@16 (73)
+    on left: 60, on right: 62
+@17 (74)
+    on left: 61, on right: 62
+orexpr (75)
+    on left: 63 64, on right: 59 62 64
+andexpr (76)
+    on left: 65 66, on right: 63 64 66
+eqexpr (77)
+    on left: 67 68 69, on right: 65 66 68 69
+ineqexpr (78)
+    on left: 70 71 72 73 74, on right: 67 68 69 71 72 73 74
+addexpr (79)
+    on left: 75 76 77, on right: 70 71 72 73 74 76 77
+multexpr (80)
+    on left: 78 79 80 81, on right: 75 76 77 79 80 81
+unexpr (81)
+    on left: 82 83 84, on right: 78 79 80 81
+lvalexpr (82)
+    on left: 85 86, on right: 43 52 58
+primexpr (83)
+    on left: 87 89 90 91 92 93, on right: 82 83 84
+@18 (84)
+    on left: 88, on right: 89
+exprlist (85)
+    on left: 94 95 96, on right: 89 95
+
+
+State 0
+
+    0 $accept: . prog $end
+
+    $default  reduce using rule 1 ($@1)
+
+    prog  go to state 1
+    $@1   go to state 2
+
+
+State 1
+
+    0 $accept: prog . $end
+
+    $end  shift, and go to state 3
+
+
+State 2
+
+    2 prog: $@1 . funcvardecl progdecl
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 10 (funcvardecl)
+
+    funcvardecl  go to state 6
+    type         go to state 7
+
+
+State 3
+
+    0 $accept: prog $end .
+
+    $default  accept
+
+
+State 4
+
+   35 type: TNUM .
+
+    $default  reduce using rule 35 (type)
+
+
+State 5
+
+   36 type: TCHAR .
+
+    $default  reduce using rule 36 (type)
+
+
+State 6
+
+    2 prog: $@1 funcvardecl . progdecl
+
+    TMAIN  shift, and go to state 8
+
+    progdecl  go to state 9
+
+
+State 7
+
+    4 funcvardecl: type . TID $@2 vardecl TSCOLON funcvardecl
+    6            | type . TID TASSIGN expr $@3 vardecl TSCOLON funcvardecl
+    7            | type . TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON funcvardecl
+    9            | type . TID TLPAREN $@4 paramlist TRPAREN block funcvardecl
+
+    TID  shift, and go to state 10
+
+
+State 8
+
+   12 progdecl: TMAIN . $@5 block
+
+    $default  reduce using rule 11 ($@5)
+
+    $@5  go to state 11
+
+
+State 9
+
+    2 prog: $@1 funcvardecl progdecl .
+
+    $default  reduce using rule 2 (prog)
+
+
+State 10
+
+    4 funcvardecl: type TID . $@2 vardecl TSCOLON funcvardecl
+    6            | type TID . TASSIGN expr $@3 vardecl TSCOLON funcvardecl
+    7            | type TID . TLBRACK TNUMLIT TRBRACK vardecl TSCOLON funcvardecl
+    9            | type TID . TLPAREN $@4 paramlist TRPAREN block funcvardecl
+
+    TLBRACK  shift, and go to state 12
+    TLPAREN  shift, and go to state 13
+    TASSIGN  shift, and go to state 14
+
+    $default  reduce using rule 3 ($@2)
+
+    $@2  go to state 15
+
+
+State 11
+
+   12 progdecl: TMAIN $@5 . block
+
+    TLBRACE  shift, and go to state 16
+
+    block  go to state 17
+
+
+State 12
+
+    7 funcvardecl: type TID TLBRACK . TNUMLIT TRBRACK vardecl TSCOLON funcvardecl
+
+    TNUMLIT  shift, and go to state 18
+
+
+State 13
+
+    9 funcvardecl: type TID TLPAREN . $@4 paramlist TRPAREN block funcvardecl
+
+    $default  reduce using rule 8 ($@4)
+
+    $@4  go to state 19
+
+
+State 14
+
+    6 funcvardecl: type TID TASSIGN . expr $@3 vardecl TSCOLON funcvardecl
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 26
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 15
+
+    4 funcvardecl: type TID $@2 . vardecl TSCOLON funcvardecl
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 39
+
+
+State 16
+
+   27 block: TLBRACE . $@9 vardecllist commlist TRBRACE
+   28      | TLBRACE . TRBRACE
+
+    TRBRACE  shift, and go to state 40
+
+    $default  reduce using rule 26 ($@9)
+
+    $@9  go to state 41
+
+
+State 17
+
+   12 progdecl: TMAIN $@5 block .
+
+    $default  reduce using rule 12 (progdecl)
+
+
+State 18
+
+    7 funcvardecl: type TID TLBRACK TNUMLIT . TRBRACK vardecl TSCOLON funcvardecl
+
+    TRBRACK  shift, and go to state 42
+
+
+State 19
+
+    9 funcvardecl: type TID TLPAREN $@4 . paramlist TRPAREN block funcvardecl
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 20 (paramlist)
+
+    paramlist      go to state 43
+    paramlistcont  go to state 44
+    type           go to state 45
+
+
+State 20
+
+   85 lvalexpr: TID .
+   86         | TID . TLBRACK expr TRBRACK
+   87 primexpr: TID .
+   89         | TID . TLPAREN @18 exprlist TRPAREN
+   90         | TID . TLBRACK expr TRBRACK
+
+    TLBRACK  shift, and go to state 46
+    TLPAREN  shift, and go to state 47
+
+    TASSIGN   reduce using rule 85 (lvalexpr)
+    $default  reduce using rule 87 (primexpr)
+
+
+State 21
+
+   93 primexpr: TNUMLIT .
+
+    $default  reduce using rule 93 (primexpr)
+
+
+State 22
+
+   92 primexpr: TCHARLIT .
+
+    $default  reduce using rule 92 (primexpr)
+
+
+State 23
+
+   91 primexpr: TLPAREN . expr TRPAREN
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 48
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 24
+
+   83 unexpr: TMIN . primexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+
+    primexpr  go to state 50
+
+
+State 25
+
+   84 unexpr: TNOT . primexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+
+    primexpr  go to state 51
+
+
+State 26
+
+    6 funcvardecl: type TID TASSIGN expr . $@3 vardecl TSCOLON funcvardecl
+
+    $default  reduce using rule 5 ($@3)
+
+    $@3  go to state 52
+
+
+State 27
+
+   56 expr: assignexpr .
+
+    $default  reduce using rule 56 (expr)
+
+
+State 28
+
+   57 assignexpr: condexpr .
+
+    $default  reduce using rule 57 (assignexpr)
+
+
+State 29
+
+   59 condexpr: orexpr .
+   62         | orexpr . TCONDIF @16 expr @17 TCONDELSE condexpr
+   64 orexpr: orexpr . TOR andexpr
+
+    TCONDIF  shift, and go to state 53
+    TOR      shift, and go to state 54
+
+    $default  reduce using rule 59 (condexpr)
+
+
+State 30
+
+   63 orexpr: andexpr .
+   66 andexpr: andexpr . TAND eqexpr
+
+    TAND  shift, and go to state 55
+
+    $default  reduce using rule 63 (orexpr)
+
+
+State 31
+
+   65 andexpr: eqexpr .
+   68 eqexpr: eqexpr . TEQ ineqexpr
+   69       | eqexpr . TNEQ ineqexpr
+
+    TEQ   shift, and go to state 56
+    TNEQ  shift, and go to state 57
+
+    $default  reduce using rule 65 (andexpr)
+
+
+State 32
+
+   67 eqexpr: ineqexpr .
+   71 ineqexpr: ineqexpr . TLT addexpr
+   72         | ineqexpr . TMT addexpr
+   73         | ineqexpr . TLE addexpr
+   74         | ineqexpr . TME addexpr
+
+    TLT  shift, and go to state 58
+    TMT  shift, and go to state 59
+    TLE  shift, and go to state 60
+    TME  shift, and go to state 61
+
+    $default  reduce using rule 67 (eqexpr)
+
+
+State 33
+
+   70 ineqexpr: addexpr .
+   76 addexpr: addexpr . TSUM multexpr
+   77        | addexpr . TMIN multexpr
+
+    TSUM  shift, and go to state 62
+    TMIN  shift, and go to state 63
+
+    $default  reduce using rule 70 (ineqexpr)
+
+
+State 34
+
+   75 addexpr: multexpr .
+   79 multexpr: multexpr . TMULT unexpr
+   80         | multexpr . TDIV unexpr
+   81         | multexpr . TMOD unexpr
+
+    TMULT  shift, and go to state 64
+    TDIV   shift, and go to state 65
+    TMOD   shift, and go to state 66
+
+    $default  reduce using rule 75 (addexpr)
+
+
+State 35
+
+   78 multexpr: unexpr .
+
+    $default  reduce using rule 78 (multexpr)
+
+
+State 36
+
+   58 assignexpr: lvalexpr . TASSIGN assignexpr
+
+    TASSIGN  shift, and go to state 67
+
+
+State 37
+
+   82 unexpr: primexpr .
+
+    $default  reduce using rule 82 (unexpr)
+
+
+State 38
+
+   14 vardecl: TCOMMA . TID $@6 vardecl
+   16        | TCOMMA . TID TASSIGN expr $@7 vardecl
+   17        | TCOMMA . TID TLBRACK TNUMLIT TRBRACK vardecl
+
+    TID  shift, and go to state 68
+
+
+State 39
+
+    4 funcvardecl: type TID $@2 vardecl . TSCOLON funcvardecl
+
+    TSCOLON  shift, and go to state 69
+
+
+State 40
+
+   28 block: TLBRACE TRBRACE .
+
+    $default  reduce using rule 28 (block)
+
+
+State 41
+
+   27 block: TLBRACE $@9 . vardecllist commlist TRBRACE
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 34 (vardecllist)
+
+    vardecllist  go to state 70
+    type         go to state 71
+
+
+State 42
+
+    7 funcvardecl: type TID TLBRACK TNUMLIT TRBRACK . vardecl TSCOLON funcvardecl
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 72
+
+
+State 43
+
+    9 funcvardecl: type TID TLPAREN $@4 paramlist . TRPAREN block funcvardecl
+
+    TRPAREN  shift, and go to state 73
+
+
+State 44
+
+   19 paramlist: paramlistcont .
+
+    $default  reduce using rule 19 (paramlist)
+
+
+State 45
+
+   21 paramlistcont: type . TID
+   23              | type . TID TCOMMA $@8 paramlistcont
+   24              | type . TID TLBRACK TRBRACK
+   25              | type . TID TLBRACK TRBRACK TCOMMA paramlistcont
+
+    TID  shift, and go to state 74
+
+
+State 46
+
+   86 lvalexpr: TID TLBRACK . expr TRBRACK
+   90 primexpr: TID TLBRACK . expr TRBRACK
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 75
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 47
+
+   89 primexpr: TID TLPAREN . @18 exprlist TRPAREN
+
+    $default  reduce using rule 88 (@18)
+
+    @18  go to state 76
+
+
+State 48
+
+   91 primexpr: TLPAREN expr . TRPAREN
+
+    TRPAREN  shift, and go to state 77
+
+
+State 49
+
+   87 primexpr: TID .
+   89         | TID . TLPAREN @18 exprlist TRPAREN
+   90         | TID . TLBRACK expr TRBRACK
+
+    TLBRACK  shift, and go to state 78
+    TLPAREN  shift, and go to state 47
+
+    $default  reduce using rule 87 (primexpr)
+
+
+State 50
+
+   83 unexpr: TMIN primexpr .
+
+    $default  reduce using rule 83 (unexpr)
+
+
+State 51
+
+   84 unexpr: TNOT primexpr .
+
+    $default  reduce using rule 84 (unexpr)
+
+
+State 52
+
+    6 funcvardecl: type TID TASSIGN expr $@3 . vardecl TSCOLON funcvardecl
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 79
+
+
+State 53
+
+   62 condexpr: orexpr TCONDIF . @16 expr @17 TCONDELSE condexpr
+
+    $default  reduce using rule 60 (@16)
+
+    @16  go to state 80
+
+
+State 54
+
+   64 orexpr: orexpr TOR . andexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    andexpr   go to state 81
+    eqexpr    go to state 31
+    ineqexpr  go to state 32
+    addexpr   go to state 33
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 55
+
+   66 andexpr: andexpr TAND . eqexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    eqexpr    go to state 82
+    ineqexpr  go to state 32
+    addexpr   go to state 33
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 56
+
+   68 eqexpr: eqexpr TEQ . ineqexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    ineqexpr  go to state 83
+    addexpr   go to state 33
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 57
+
+   69 eqexpr: eqexpr TNEQ . ineqexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    ineqexpr  go to state 84
+    addexpr   go to state 33
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 58
+
+   71 ineqexpr: ineqexpr TLT . addexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    addexpr   go to state 85
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 59
+
+   72 ineqexpr: ineqexpr TMT . addexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    addexpr   go to state 86
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 60
+
+   73 ineqexpr: ineqexpr TLE . addexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    addexpr   go to state 87
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 61
+
+   74 ineqexpr: ineqexpr TME . addexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    addexpr   go to state 88
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 62
+
+   76 addexpr: addexpr TSUM . multexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    multexpr  go to state 89
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 63
+
+   77 addexpr: addexpr TMIN . multexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    multexpr  go to state 90
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 64
+
+   79 multexpr: multexpr TMULT . unexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    unexpr    go to state 91
+    primexpr  go to state 37
+
+
+State 65
+
+   80 multexpr: multexpr TDIV . unexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    unexpr    go to state 92
+    primexpr  go to state 37
+
+
+State 66
+
+   81 multexpr: multexpr TMOD . unexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    unexpr    go to state 93
+    primexpr  go to state 37
+
+
+State 67
+
+   58 assignexpr: lvalexpr TASSIGN . assignexpr
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    assignexpr  go to state 94
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 68
+
+   14 vardecl: TCOMMA TID . $@6 vardecl
+   16        | TCOMMA TID . TASSIGN expr $@7 vardecl
+   17        | TCOMMA TID . TLBRACK TNUMLIT TRBRACK vardecl
+
+    TLBRACK  shift, and go to state 95
+    TASSIGN  shift, and go to state 96
+
+    $default  reduce using rule 13 ($@6)
+
+    $@6  go to state 97
+
+
+State 69
+
+    4 funcvardecl: type TID $@2 vardecl TSCOLON . funcvardecl
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 10 (funcvardecl)
+
+    funcvardecl  go to state 98
+    type         go to state 7
+
+
+State 70
+
+   27 block: TLBRACE $@9 vardecllist . commlist TRBRACE
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TSCOLON   shift, and go to state 99
+    TLPAREN   shift, and go to state 23
+    TLBRACE   shift, and go to state 16
+    TRET      shift, and go to state 100
+    TREAD     shift, and go to state 101
+    TWRIT     shift, and go to state 102
+    TIF       shift, and go to state 103
+    TWHILE    shift, and go to state 104
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    block       go to state 105
+    commlist    go to state 106
+    comm        go to state 107
+    ifstmt      go to state 108
+    expr        go to state 109
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 71
+
+   30 vardecllist: type . TID $@10 vardecl TSCOLON vardecllist
+   32            | type . TID TASSIGN expr $@11 vardecl TSCOLON vardecllist
+   33            | type . TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON vardecllist
+
+    TID  shift, and go to state 110
+
+
+State 72
+
+    7 funcvardecl: type TID TLBRACK TNUMLIT TRBRACK vardecl . TSCOLON funcvardecl
+
+    TSCOLON  shift, and go to state 111
+
+
+State 73
+
+    9 funcvardecl: type TID TLPAREN $@4 paramlist TRPAREN . block funcvardecl
+
+    TLBRACE  shift, and go to state 16
+
+    block  go to state 112
+
+
+State 74
+
+   21 paramlistcont: type TID .
+   23              | type TID . TCOMMA $@8 paramlistcont
+   24              | type TID . TLBRACK TRBRACK
+   25              | type TID . TLBRACK TRBRACK TCOMMA paramlistcont
+
+    TCOMMA   shift, and go to state 113
+    TLBRACK  shift, and go to state 114
+
+    $default  reduce using rule 21 (paramlistcont)
+
+
+State 75
+
+   86 lvalexpr: TID TLBRACK expr . TRBRACK
+   90 primexpr: TID TLBRACK expr . TRBRACK
+
+    TRBRACK  shift, and go to state 115
+
+
+State 76
+
+   89 primexpr: TID TLPAREN @18 . exprlist TRPAREN
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    $default  reduce using rule 96 (exprlist)
+
+    assignexpr  go to state 116
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+    exprlist    go to state 117
+
+
+State 77
+
+   91 primexpr: TLPAREN expr TRPAREN .
+
+    $default  reduce using rule 91 (primexpr)
+
+
+State 78
+
+   90 primexpr: TID TLBRACK . expr TRBRACK
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 118
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 79
+
+    6 funcvardecl: type TID TASSIGN expr $@3 vardecl . TSCOLON funcvardecl
+
+    TSCOLON  shift, and go to state 119
+
+
+State 80
+
+   62 condexpr: orexpr TCONDIF @16 . expr @17 TCONDELSE condexpr
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 120
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 81
+
+   64 orexpr: orexpr TOR andexpr .
+   66 andexpr: andexpr . TAND eqexpr
+
+    TAND  shift, and go to state 55
+
+    $default  reduce using rule 64 (orexpr)
+
+
+State 82
+
+   66 andexpr: andexpr TAND eqexpr .
+   68 eqexpr: eqexpr . TEQ ineqexpr
+   69       | eqexpr . TNEQ ineqexpr
+
+    TEQ   shift, and go to state 56
+    TNEQ  shift, and go to state 57
+
+    $default  reduce using rule 66 (andexpr)
+
+
+State 83
+
+   68 eqexpr: eqexpr TEQ ineqexpr .
+   71 ineqexpr: ineqexpr . TLT addexpr
+   72         | ineqexpr . TMT addexpr
+   73         | ineqexpr . TLE addexpr
+   74         | ineqexpr . TME addexpr
+
+    TLT  shift, and go to state 58
+    TMT  shift, and go to state 59
+    TLE  shift, and go to state 60
+    TME  shift, and go to state 61
+
+    $default  reduce using rule 68 (eqexpr)
+
+
+State 84
+
+   69 eqexpr: eqexpr TNEQ ineqexpr .
+   71 ineqexpr: ineqexpr . TLT addexpr
+   72         | ineqexpr . TMT addexpr
+   73         | ineqexpr . TLE addexpr
+   74         | ineqexpr . TME addexpr
+
+    TLT  shift, and go to state 58
+    TMT  shift, and go to state 59
+    TLE  shift, and go to state 60
+    TME  shift, and go to state 61
+
+    $default  reduce using rule 69 (eqexpr)
+
+
+State 85
+
+   71 ineqexpr: ineqexpr TLT addexpr .
+   76 addexpr: addexpr . TSUM multexpr
+   77        | addexpr . TMIN multexpr
+
+    TSUM  shift, and go to state 62
+    TMIN  shift, and go to state 63
+
+    $default  reduce using rule 71 (ineqexpr)
+
+
+State 86
+
+   72 ineqexpr: ineqexpr TMT addexpr .
+   76 addexpr: addexpr . TSUM multexpr
+   77        | addexpr . TMIN multexpr
+
+    TSUM  shift, and go to state 62
+    TMIN  shift, and go to state 63
+
+    $default  reduce using rule 72 (ineqexpr)
+
+
+State 87
+
+   73 ineqexpr: ineqexpr TLE addexpr .
+   76 addexpr: addexpr . TSUM multexpr
+   77        | addexpr . TMIN multexpr
+
+    TSUM  shift, and go to state 62
+    TMIN  shift, and go to state 63
+
+    $default  reduce using rule 73 (ineqexpr)
+
+
+State 88
+
+   74 ineqexpr: ineqexpr TME addexpr .
+   76 addexpr: addexpr . TSUM multexpr
+   77        | addexpr . TMIN multexpr
+
+    TSUM  shift, and go to state 62
+    TMIN  shift, and go to state 63
+
+    $default  reduce using rule 74 (ineqexpr)
+
+
+State 89
+
+   76 addexpr: addexpr TSUM multexpr .
+   79 multexpr: multexpr . TMULT unexpr
+   80         | multexpr . TDIV unexpr
+   81         | multexpr . TMOD unexpr
+
+    TMULT  shift, and go to state 64
+    TDIV   shift, and go to state 65
+    TMOD   shift, and go to state 66
+
+    $default  reduce using rule 76 (addexpr)
+
+
+State 90
+
+   77 addexpr: addexpr TMIN multexpr .
+   79 multexpr: multexpr . TMULT unexpr
+   80         | multexpr . TDIV unexpr
+   81         | multexpr . TMOD unexpr
+
+    TMULT  shift, and go to state 64
+    TDIV   shift, and go to state 65
+    TMOD   shift, and go to state 66
+
+    $default  reduce using rule 77 (addexpr)
+
+
+State 91
+
+   79 multexpr: multexpr TMULT unexpr .
+
+    $default  reduce using rule 79 (multexpr)
+
+
+State 92
+
+   80 multexpr: multexpr TDIV unexpr .
+
+    $default  reduce using rule 80 (multexpr)
+
+
+State 93
+
+   81 multexpr: multexpr TMOD unexpr .
+
+    $default  reduce using rule 81 (multexpr)
+
+
+State 94
+
+   58 assignexpr: lvalexpr TASSIGN assignexpr .
+
+    $default  reduce using rule 58 (assignexpr)
+
+
+State 95
+
+   17 vardecl: TCOMMA TID TLBRACK . TNUMLIT TRBRACK vardecl
+
+    TNUMLIT  shift, and go to state 121
+
+
+State 96
+
+   16 vardecl: TCOMMA TID TASSIGN . expr $@7 vardecl
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 122
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 97
+
+   14 vardecl: TCOMMA TID $@6 . vardecl
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 123
+
+
+State 98
+
+    4 funcvardecl: type TID $@2 vardecl TSCOLON funcvardecl .
+
+    $default  reduce using rule 4 (funcvardecl)
+
+
+State 99
+
+   39 comm: TSCOLON .
+
+    $default  reduce using rule 39 (comm)
+
+
+State 100
+
+   41 comm: TRET . expr TSCOLON
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 124
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 101
+
+   43 comm: TREAD . lvalexpr $@12 readvars TSCOLON
+
+    TID  shift, and go to state 125
+
+    lvalexpr  go to state 126
+
+
+State 102
+
+   44 comm: TWRIT . expr TSCOLON
+   45     | TWRIT . TSTRLIT TSCOLON
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TSTRLIT   shift, and go to state 127
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 128
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 103
+
+   55 ifstmt: TIF . TLPAREN expr TRPAREN $@15 comm
+
+    TLPAREN  shift, and go to state 129
+
+
+State 104
+
+   50 comm: TWHILE . TLPAREN $@13 expr $@14 TRPAREN comm
+
+    TLPAREN  shift, and go to state 130
+
+
+State 105
+
+   51 comm: block .
+
+    $default  reduce using rule 51 (comm)
+
+
+State 106
+
+   27 block: TLBRACE $@9 vardecllist commlist . TRBRACE
+
+    TRBRACE  shift, and go to state 131
+
+
+State 107
+
+   37 commlist: comm .
+   38         | comm . commlist
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TSCOLON   shift, and go to state 99
+    TLPAREN   shift, and go to state 23
+    TLBRACE   shift, and go to state 16
+    TRET      shift, and go to state 100
+    TREAD     shift, and go to state 101
+    TWRIT     shift, and go to state 102
+    TIF       shift, and go to state 103
+    TWHILE    shift, and go to state 104
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    $default  reduce using rule 37 (commlist)
+
+    block       go to state 105
+    commlist    go to state 132
+    comm        go to state 107
+    ifstmt      go to state 108
+    expr        go to state 109
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 108
+
+   46 comm: ifstmt .
+   47     | ifstmt . TELSE comm
+
+    TELSE  shift, and go to state 133
+
+    TELSE     [reduce using rule 46 (comm)]
+    $default  reduce using rule 46 (comm)
+
+
+State 109
+
+   40 comm: expr . TSCOLON
+
+    TSCOLON  shift, and go to state 134
+
+
+State 110
+
+   30 vardecllist: type TID . $@10 vardecl TSCOLON vardecllist
+   32            | type TID . TASSIGN expr $@11 vardecl TSCOLON vardecllist
+   33            | type TID . TLBRACK TNUMLIT TRBRACK vardecl TSCOLON vardecllist
+
+    TLBRACK  shift, and go to state 135
+    TASSIGN  shift, and go to state 136
+
+    $default  reduce using rule 29 ($@10)
+
+    $@10  go to state 137
+
+
+State 111
+
+    7 funcvardecl: type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON . funcvardecl
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 10 (funcvardecl)
+
+    funcvardecl  go to state 138
+    type         go to state 7
+
+
+State 112
+
+    9 funcvardecl: type TID TLPAREN $@4 paramlist TRPAREN block . funcvardecl
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 10 (funcvardecl)
+
+    funcvardecl  go to state 139
+    type         go to state 7
+
+
+State 113
+
+   23 paramlistcont: type TID TCOMMA . $@8 paramlistcont
+
+    $default  reduce using rule 22 ($@8)
+
+    $@8  go to state 140
+
+
+State 114
+
+   24 paramlistcont: type TID TLBRACK . TRBRACK
+   25              | type TID TLBRACK . TRBRACK TCOMMA paramlistcont
+
+    TRBRACK  shift, and go to state 141
+
+
+State 115
+
+   86 lvalexpr: TID TLBRACK expr TRBRACK .
+   90 primexpr: TID TLBRACK expr TRBRACK .
+
+    TASSIGN   reduce using rule 86 (lvalexpr)
+    $default  reduce using rule 90 (primexpr)
+
+
+State 116
+
+   94 exprlist: assignexpr .
+
+    $default  reduce using rule 94 (exprlist)
+
+
+State 117
+
+   89 primexpr: TID TLPAREN @18 exprlist . TRPAREN
+   95 exprlist: exprlist . TCOMMA assignexpr
+
+    TCOMMA   shift, and go to state 142
+    TRPAREN  shift, and go to state 143
+
+
+State 118
+
+   90 primexpr: TID TLBRACK expr . TRBRACK
+
+    TRBRACK  shift, and go to state 144
+
+
+State 119
+
+    6 funcvardecl: type TID TASSIGN expr $@3 vardecl TSCOLON . funcvardecl
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 10 (funcvardecl)
+
+    funcvardecl  go to state 145
+    type         go to state 7
+
+
+State 120
+
+   62 condexpr: orexpr TCONDIF @16 expr . @17 TCONDELSE condexpr
+
+    $default  reduce using rule 61 (@17)
+
+    @17  go to state 146
+
+
+State 121
+
+   17 vardecl: TCOMMA TID TLBRACK TNUMLIT . TRBRACK vardecl
+
+    TRBRACK  shift, and go to state 147
+
+
+State 122
+
+   16 vardecl: TCOMMA TID TASSIGN expr . $@7 vardecl
+
+    $default  reduce using rule 15 ($@7)
+
+    $@7  go to state 148
+
+
+State 123
+
+   14 vardecl: TCOMMA TID $@6 vardecl .
+
+    $default  reduce using rule 14 (vardecl)
+
+
+State 124
+
+   41 comm: TRET expr . TSCOLON
+
+    TSCOLON  shift, and go to state 149
+
+
+State 125
+
+   85 lvalexpr: TID .
+   86         | TID . TLBRACK expr TRBRACK
+
+    TLBRACK  shift, and go to state 150
+
+    $default  reduce using rule 85 (lvalexpr)
+
+
+State 126
+
+   43 comm: TREAD lvalexpr . $@12 readvars TSCOLON
+
+    $default  reduce using rule 42 ($@12)
+
+    $@12  go to state 151
+
+
+State 127
+
+   45 comm: TWRIT TSTRLIT . TSCOLON
+
+    TSCOLON  shift, and go to state 152
+
+
+State 128
+
+   44 comm: TWRIT expr . TSCOLON
+
+    TSCOLON  shift, and go to state 153
+
+
+State 129
+
+   55 ifstmt: TIF TLPAREN . expr TRPAREN $@15 comm
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 154
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 130
+
+   50 comm: TWHILE TLPAREN . $@13 expr $@14 TRPAREN comm
+
+    $default  reduce using rule 48 ($@13)
+
+    $@13  go to state 155
+
+
+State 131
+
+   27 block: TLBRACE $@9 vardecllist commlist TRBRACE .
+
+    $default  reduce using rule 27 (block)
+
+
+State 132
+
+   38 commlist: comm commlist .
+
+    $default  reduce using rule 38 (commlist)
+
+
+State 133
+
+   47 comm: ifstmt TELSE . comm
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TSCOLON   shift, and go to state 99
+    TLPAREN   shift, and go to state 23
+    TLBRACE   shift, and go to state 16
+    TRET      shift, and go to state 100
+    TREAD     shift, and go to state 101
+    TWRIT     shift, and go to state 102
+    TIF       shift, and go to state 103
+    TWHILE    shift, and go to state 104
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    block       go to state 105
+    comm        go to state 156
+    ifstmt      go to state 108
+    expr        go to state 109
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 134
+
+   40 comm: expr TSCOLON .
+
+    $default  reduce using rule 40 (comm)
+
+
+State 135
+
+   33 vardecllist: type TID TLBRACK . TNUMLIT TRBRACK vardecl TSCOLON vardecllist
+
+    TNUMLIT  shift, and go to state 157
+
+
+State 136
+
+   32 vardecllist: type TID TASSIGN . expr $@11 vardecl TSCOLON vardecllist
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 158
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 137
+
+   30 vardecllist: type TID $@10 . vardecl TSCOLON vardecllist
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 159
+
+
+State 138
+
+    7 funcvardecl: type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON funcvardecl .
+
+    $default  reduce using rule 7 (funcvardecl)
+
+
+State 139
+
+    9 funcvardecl: type TID TLPAREN $@4 paramlist TRPAREN block funcvardecl .
+
+    $default  reduce using rule 9 (funcvardecl)
+
+
+State 140
+
+   23 paramlistcont: type TID TCOMMA $@8 . paramlistcont
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    paramlistcont  go to state 160
+    type           go to state 45
+
+
+State 141
+
+   24 paramlistcont: type TID TLBRACK TRBRACK .
+   25              | type TID TLBRACK TRBRACK . TCOMMA paramlistcont
+
+    TCOMMA  shift, and go to state 161
+
+    $default  reduce using rule 24 (paramlistcont)
+
+
+State 142
+
+   95 exprlist: exprlist TCOMMA . assignexpr
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    assignexpr  go to state 162
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 143
+
+   89 primexpr: TID TLPAREN @18 exprlist TRPAREN .
+
+    $default  reduce using rule 89 (primexpr)
+
+
+State 144
+
+   90 primexpr: TID TLBRACK expr TRBRACK .
+
+    $default  reduce using rule 90 (primexpr)
+
+
+State 145
+
+    6 funcvardecl: type TID TASSIGN expr $@3 vardecl TSCOLON funcvardecl .
+
+    $default  reduce using rule 6 (funcvardecl)
+
+
+State 146
+
+   62 condexpr: orexpr TCONDIF @16 expr @17 . TCONDELSE condexpr
+
+    TCONDELSE  shift, and go to state 163
+
+
+State 147
+
+   17 vardecl: TCOMMA TID TLBRACK TNUMLIT TRBRACK . vardecl
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 164
+
+
+State 148
+
+   16 vardecl: TCOMMA TID TASSIGN expr $@7 . vardecl
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 165
+
+
+State 149
+
+   41 comm: TRET expr TSCOLON .
+
+    $default  reduce using rule 41 (comm)
+
+
+State 150
+
+   86 lvalexpr: TID TLBRACK . expr TRBRACK
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 166
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 151
+
+   43 comm: TREAD lvalexpr $@12 . readvars TSCOLON
+
+    TCOMMA  shift, and go to state 167
+
+    $default  reduce using rule 53 (readvars)
+
+    readvars  go to state 168
+
+
+State 152
+
+   45 comm: TWRIT TSTRLIT TSCOLON .
+
+    $default  reduce using rule 45 (comm)
+
+
+State 153
+
+   44 comm: TWRIT expr TSCOLON .
+
+    $default  reduce using rule 44 (comm)
+
+
+State 154
+
+   55 ifstmt: TIF TLPAREN expr . TRPAREN $@15 comm
+
+    TRPAREN  shift, and go to state 169
+
+
+State 155
+
+   50 comm: TWHILE TLPAREN $@13 . expr $@14 TRPAREN comm
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    expr        go to state 170
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 156
+
+   47 comm: ifstmt TELSE comm .
+
+    $default  reduce using rule 47 (comm)
+
+
+State 157
+
+   33 vardecllist: type TID TLBRACK TNUMLIT . TRBRACK vardecl TSCOLON vardecllist
+
+    TRBRACK  shift, and go to state 171
+
+
+State 158
+
+   32 vardecllist: type TID TASSIGN expr . $@11 vardecl TSCOLON vardecllist
+
+    $default  reduce using rule 31 ($@11)
+
+    $@11  go to state 172
+
+
+State 159
+
+   30 vardecllist: type TID $@10 vardecl . TSCOLON vardecllist
+
+    TSCOLON  shift, and go to state 173
+
+
+State 160
+
+   23 paramlistcont: type TID TCOMMA $@8 paramlistcont .
+
+    $default  reduce using rule 23 (paramlistcont)
+
+
+State 161
+
+   25 paramlistcont: type TID TLBRACK TRBRACK TCOMMA . paramlistcont
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    paramlistcont  go to state 174
+    type           go to state 45
+
+
+State 162
+
+   95 exprlist: exprlist TCOMMA assignexpr .
+
+    $default  reduce using rule 95 (exprlist)
+
+
+State 163
+
+   62 condexpr: orexpr TCONDIF @16 expr @17 TCONDELSE . condexpr
+
+    TID       shift, and go to state 49
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TLPAREN   shift, and go to state 23
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    condexpr  go to state 175
+    orexpr    go to state 29
+    andexpr   go to state 30
+    eqexpr    go to state 31
+    ineqexpr  go to state 32
+    addexpr   go to state 33
+    multexpr  go to state 34
+    unexpr    go to state 35
+    primexpr  go to state 37
+
+
+State 164
+
+   17 vardecl: TCOMMA TID TLBRACK TNUMLIT TRBRACK vardecl .
+
+    $default  reduce using rule 17 (vardecl)
+
+
+State 165
+
+   16 vardecl: TCOMMA TID TASSIGN expr $@7 vardecl .
+
+    $default  reduce using rule 16 (vardecl)
+
+
+State 166
+
+   86 lvalexpr: TID TLBRACK expr . TRBRACK
+
+    TRBRACK  shift, and go to state 176
+
+
+State 167
+
+   52 readvars: TCOMMA . lvalexpr readvars
+
+    TID  shift, and go to state 125
+
+    lvalexpr  go to state 177
+
+
+State 168
+
+   43 comm: TREAD lvalexpr $@12 readvars . TSCOLON
+
+    TSCOLON  shift, and go to state 178
+
+
+State 169
+
+   55 ifstmt: TIF TLPAREN expr TRPAREN . $@15 comm
+
+    $default  reduce using rule 54 ($@15)
+
+    $@15  go to state 179
+
+
+State 170
+
+   50 comm: TWHILE TLPAREN $@13 expr . $@14 TRPAREN comm
+
+    $default  reduce using rule 49 ($@14)
+
+    $@14  go to state 180
+
+
+State 171
+
+   33 vardecllist: type TID TLBRACK TNUMLIT TRBRACK . vardecl TSCOLON vardecllist
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 181
+
+
+State 172
+
+   32 vardecllist: type TID TASSIGN expr $@11 . vardecl TSCOLON vardecllist
+
+    TCOMMA  shift, and go to state 38
+
+    $default  reduce using rule 18 (vardecl)
+
+    vardecl  go to state 182
+
+
+State 173
+
+   30 vardecllist: type TID $@10 vardecl TSCOLON . vardecllist
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 34 (vardecllist)
+
+    vardecllist  go to state 183
+    type         go to state 71
+
+
+State 174
+
+   25 paramlistcont: type TID TLBRACK TRBRACK TCOMMA paramlistcont .
+
+    $default  reduce using rule 25 (paramlistcont)
+
+
+State 175
+
+   62 condexpr: orexpr TCONDIF @16 expr @17 TCONDELSE condexpr .
+
+    $default  reduce using rule 62 (condexpr)
+
+
+State 176
+
+   86 lvalexpr: TID TLBRACK expr TRBRACK .
+
+    $default  reduce using rule 86 (lvalexpr)
+
+
+State 177
+
+   52 readvars: TCOMMA lvalexpr . readvars
+
+    TCOMMA  shift, and go to state 167
+
+    $default  reduce using rule 53 (readvars)
+
+    readvars  go to state 184
+
+
+State 178
+
+   43 comm: TREAD lvalexpr $@12 readvars TSCOLON .
+
+    $default  reduce using rule 43 (comm)
+
+
+State 179
+
+   55 ifstmt: TIF TLPAREN expr TRPAREN $@15 . comm
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TSCOLON   shift, and go to state 99
+    TLPAREN   shift, and go to state 23
+    TLBRACE   shift, and go to state 16
+    TRET      shift, and go to state 100
+    TREAD     shift, and go to state 101
+    TWRIT     shift, and go to state 102
+    TIF       shift, and go to state 103
+    TWHILE    shift, and go to state 104
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    block       go to state 105
+    comm        go to state 185
+    ifstmt      go to state 108
+    expr        go to state 109
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 180
+
+   50 comm: TWHILE TLPAREN $@13 expr $@14 . TRPAREN comm
+
+    TRPAREN  shift, and go to state 186
+
+
+State 181
+
+   33 vardecllist: type TID TLBRACK TNUMLIT TRBRACK vardecl . TSCOLON vardecllist
+
+    TSCOLON  shift, and go to state 187
+
+
+State 182
+
+   32 vardecllist: type TID TASSIGN expr $@11 vardecl . TSCOLON vardecllist
+
+    TSCOLON  shift, and go to state 188
+
+
+State 183
+
+   30 vardecllist: type TID $@10 vardecl TSCOLON vardecllist .
+
+    $default  reduce using rule 30 (vardecllist)
+
+
+State 184
+
+   52 readvars: TCOMMA lvalexpr readvars .
+
+    $default  reduce using rule 52 (readvars)
+
+
+State 185
+
+   55 ifstmt: TIF TLPAREN expr TRPAREN $@15 comm .
+
+    $default  reduce using rule 55 (ifstmt)
+
+
+State 186
+
+   50 comm: TWHILE TLPAREN $@13 expr $@14 TRPAREN . comm
+
+    TID       shift, and go to state 20
+    TNUMLIT   shift, and go to state 21
+    TCHARLIT  shift, and go to state 22
+    TSCOLON   shift, and go to state 99
+    TLPAREN   shift, and go to state 23
+    TLBRACE   shift, and go to state 16
+    TRET      shift, and go to state 100
+    TREAD     shift, and go to state 101
+    TWRIT     shift, and go to state 102
+    TIF       shift, and go to state 103
+    TWHILE    shift, and go to state 104
+    TMIN      shift, and go to state 24
+    TNOT      shift, and go to state 25
+
+    block       go to state 105
+    comm        go to state 189
+    ifstmt      go to state 108
+    expr        go to state 109
+    assignexpr  go to state 27
+    condexpr    go to state 28
+    orexpr      go to state 29
+    andexpr     go to state 30
+    eqexpr      go to state 31
+    ineqexpr    go to state 32
+    addexpr     go to state 33
+    multexpr    go to state 34
+    unexpr      go to state 35
+    lvalexpr    go to state 36
+    primexpr    go to state 37
+
+
+State 187
+
+   33 vardecllist: type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON . vardecllist
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 34 (vardecllist)
+
+    vardecllist  go to state 190
+    type         go to state 71
+
+
+State 188
+
+   32 vardecllist: type TID TASSIGN expr $@11 vardecl TSCOLON . vardecllist
+
+    TNUM   shift, and go to state 4
+    TCHAR  shift, and go to state 5
+
+    $default  reduce using rule 34 (vardecllist)
+
+    vardecllist  go to state 191
+    type         go to state 71
+
+
+State 189
+
+   50 comm: TWHILE TLPAREN $@13 expr $@14 TRPAREN comm .
+
+    $default  reduce using rule 50 (comm)
+
+
+State 190
+
+   33 vardecllist: type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON vardecllist .
+
+    $default  reduce using rule 33 (vardecllist)
+
+
+State 191
+
+   32 vardecllist: type TID TASSIGN expr $@11 vardecl TSCOLON vardecllist .
+
+    $default  reduce using rule 32 (vardecllist)
