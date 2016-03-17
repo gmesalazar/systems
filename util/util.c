@@ -1,4 +1,4 @@
-#include <util.h>
+#include "util.h"
 
 void
 err_exit(const char *fmt, ...)
@@ -113,8 +113,7 @@ writeLine(int sockd, const void *vptr, size_t n) {
     while ( nleft > 0 ) {
 	if ( (nwritten = write(sockd, buffer, nleft)) <= 0 ) {
 	    if ( errno == EINTR )
-		nwritten = 0;
-	    else;
+			nwritten = 0;
 	}
 	nleft  -= nwritten;
 	buffer += nwritten;

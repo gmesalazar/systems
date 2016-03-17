@@ -10,10 +10,10 @@ $(MAIN):    $(MAIN).o $(UTIL).o
 	        $(CC) $(CFLAGS) -o $@ $^
 
 $(MAIN).o:  $(MAIN).c
-	        $(CC) -c $<
+	        $(CC) $(CFLAGS) -c $<
 
 $(UTIL).o:  ../util/$(UTIL).c
-	        $(CC) -c $<
+	        $(CC) $(CFLAGS) -c $<
 
 clean:
 	        rm -rf *.o $(MAIN)
