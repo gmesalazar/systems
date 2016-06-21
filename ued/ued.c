@@ -46,42 +46,37 @@ ued_ctrl_loop(void)
 		ch = ued_get_keycode();
 		switch(ch) {
 
-		case 68: { // CTRL + H = 1 left
+		case 104: { // h = 1 left
 			printf(TLT);
 			break;
 		}
 
-		case 67: { // CTRL + L = 1 right
+		case 108: { // l = 1 right
 			printf(TRT);
 			break;
 		}
 
-		case 66: { // CTRL + J = 1 down
+		case 106: { // j = 1 down
 			printf(TDW);
 			break;
 		}
 
-		case 65: { // CTRL + W = 1 up
+		case 107: { // k = 1 up
 			printf(TUP);
 			break;
 		}
 
-		case  2: { // CTRK + B = erase char before 
-			printf(TLT TCLR);
-			break;
-		}
-
-		case  4: { // CTRL + D = erase char at
+		case 120: { // x = erase char at
 			printf(TCLR);
 			break;
 		}
 
-		case  5: {  // CTRL + E = edit mode
+		case 105: {  // i = edit mode
 			ued_enter_edit_mode();
 			break;
 		}
 
-		case 27: { // ESC = quit edit mode
+		case  27: { // ESC = quit edit mode
 			ued_exit_edit_mode();
 			break;
 		}
@@ -117,17 +112,9 @@ ued_get_keycode(void)
 	newattr = oldattr;
 	newattr.c_lflag &= ~(ICANON | ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
-
 	ch = getchar();
-
-	switch(ch) {
-	case 27: 
-		if ((ch = ued_get_keycode()) == 91)
-			ch = ued_get_keycode();
-		break;
-	}
-
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
+
 	return ch;
 }
 
