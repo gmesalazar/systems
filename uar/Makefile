@@ -1,6 +1,6 @@
 CC      := gcc
 
-FLAGS   := -Wall -g -O2
+FLAGS   := -Wall -Wextra -g -O2
 
 MAIN    := uar
 LIST    := list

@@ -26,9 +26,4 @@ struct header {
     char magic[MAGIC_SZ];
 };
 
-#define TRUE 1
-#define FALSE 0
-
-typedef unsigned char bool;
-
 #endif //AR_H

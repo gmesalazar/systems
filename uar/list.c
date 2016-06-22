@@ -12,7 +12,7 @@
 
 static struct node *head = NULL;
 
-int 
+int
 list_insert(struct header info)
 {
 	struct node *new;
@@ -38,7 +38,7 @@ list_insert(struct header info)
 	return 1;
 }
 
-struct node *
+struct node*
 list_next(struct node *start)
 {
 	if (!start)
@@ -58,7 +58,7 @@ list_free(void)
 	return 0;
 }
 
-struct node *
+struct node*
 list_lookup(const char *fname)
 {
 	struct node *aux = head;
