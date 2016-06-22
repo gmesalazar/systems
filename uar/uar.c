@@ -87,7 +87,7 @@ print_err(char *fmt, ...)
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
-    deallocate_list();
+    list_free();
     exit(1);
 }
 
@@ -156,7 +156,7 @@ parse_archive (char *fname)
     f = fopen(fname, "r");
     fseek(f, AR_MAGIC_SZ, SEEK_SET);
 
-    deallocate_list();
+    list_free();
 
     while ( (fscanf(f, "%16s %12s %6s %6s %8s %10s %2s", header.fname, header.date, 
 		    header.uid, header.gid, header.mode, header.fsize, 
@@ -165,7 +165,7 @@ parse_archive (char *fname)
 	fseek(f, strtoul(header.fsize, NULL, 10) + 1, SEEK_CUR);
 	/* Take the "/" out of the file's name */
 	header.fname[strlen(header.fname) - 1] = '\0';
-	insert_node(header);
+	list_insert(header);
     }
 
     fclose(f);
@@ -184,10 +184,10 @@ print_table (char *arch_name, char *fname)
     parse_archive(arch_name);
 
     if (!fname)
-	while ( (node = iterate_list(node)) )
+	while ( (node = list_next(node)) )
 	    printf("%s\n", node->header.fname);
     else {
-	node = search_element(fname);
+	node = list_lookup(fname);
 	if (node)
 	    printf("%s\n", fname);
 	else
@@ -243,11 +243,11 @@ extract (char *ar_name, char *file_name)
     parse_archive(ar_name);
 
     if (!file_name)
-	while ( (ptr = iterate_list(ptr)) )
+	while ( (ptr = list_next(ptr)) )
 	    extract_aux(ar_name, ptr);
 
     else {
-	if ( !(ptr = search_element(file_name)) ) {
+	if ( !(ptr = list_lookup(file_name)) ) {
 	    printf("%s: no entry %s found\n", exec_name, file_name);
 	    exit(0);
 	}	
@@ -301,7 +301,7 @@ replace_or_add (char *ar_name, char *file_name)
     fstat(fileno(file), &file_st);
 
     /* The file is not in the archive */
-    if ( !(ptr = search_element(file_name)) ) {
+    if ( !(ptr = list_lookup(file_name)) ) {
 
 	fseek(arch, 0, SEEK_END);
 	fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr,
@@ -406,7 +406,7 @@ delete_file (char *ar_name, char *file_name)
 	print_err("%s: %s: Could not open the archive\n", exec_name,  
 		  ar_name);
 
-    if ( !(ptr = search_element(file_name)) ) {
+    if ( !(ptr = list_lookup(file_name)) ) {
 	printf("%s: no entry %s found\n", exec_name, file_name);
 	exit(0);
     }
@@ -452,10 +452,10 @@ get_acc_size (uint32_t upto)
     size_t acc = 0;
     struct node *aux = NULL;
 
-    while ( (aux = iterate_list(aux)) && (aux->seq < upto) )
+    while ( (aux = list_next(aux)) && (aux->seq < upto) )
         acc += strtoul(aux->header.fsize, NULL, 10);
 
-    while ( (aux = iterate_list(aux)) );
+    while ( (aux = list_next(aux)) );
 
     if (acc <= 1)
 	return 0;

@@ -13,64 +13,56 @@
 static struct node *head = NULL;
 
 int 
-insert_node (struct header info) 
+list_insert(struct header info)
 {
-    struct node *new_node = NULL;
-    static int seq;
+	struct node *new;
 
-    new_node = (struct node *) malloc(sizeof(struct node));
+	if ((new = calloc(1, sizeof(new))) == NULL)
+		return 0;
 
-    if ( !new_node )
-	return -1;
+	new->header = info;
+	new->next = NULL;
 
-    new_node->header = info;
-    new_node->next = NULL;
+	if (head == NULL) {
+		head = new;
+		head->seq = 1;
+	}
+	else {
+		struct node *aux = head;
+		while (aux->next)
+			aux = aux->next;
+		aux->next = new;
+		aux->next->seq++;
+	}
 
-    if ( !head ) {
-	head = new_node;
-	seq = 1;
-	head->seq = seq;
-	return 0;
-    } 
-
-    else {
-	struct node *aux = NULL;
-	aux = head;
-	while (aux->next)
-	    aux = aux->next;
-	aux->next = new_node;
-	aux->next->seq = ++seq;
-	return 0;
-    }
-    return 1;
+	return 1;
 }
 
 struct node *
-iterate_list (struct node *start_from) 
+list_next(struct node *start)
 {
-    if (!start_from)
-	return head;
-    return start_from->next;
+	if (!start)
+		return head;
+	return start->next;
 }
 
 int 
-deallocate_list (void) 
+list_free(void)
 {
-    struct node *aux = head;
-    while (aux != NULL) {
-	head = head->next;
-	free(aux);
-	aux = head;
-    }
-    head = NULL;
-    return 0;
+	struct node *aux;
+	while ((aux = head) != NULL) {
+		free(aux);
+		head = head->next;
+	}
+	head = NULL;
+	return 0;
 }
 
 struct node *
-search_element (char *fname)
-{    
-    struct node * aux = head;
-    while (aux && (strcmp(aux->header.fname, fname) != 0))
-	aux = aux->next;
-    return aux;
+list_lookup(const char *fname)
+{
+	struct node *aux = head;
+	while (aux && (strcmp(aux->header.fname, fname) != 0))
+		aux = aux->next;
+	return aux;
 }
