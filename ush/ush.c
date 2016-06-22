@@ -16,6 +16,13 @@
 #include "include/list.h"
 #include "util.h"
 
+enum redir_op {
+	REDIR_NO  = 0x0,
+	REDIR_IN  = 0x1,
+	REDIR_OUT = 0x2,
+	REDIR_ERR = 0x4,
+};
+
 static int prompt(FILE *fp);
 static int unset(char *varName);
 static int histSubst(struct_t **words);
@@ -27,8 +34,7 @@ static int execWithPipes(struct_t *words);
 static int execCommand(struct_t *words);
 static int execExec(struct_t *words);
 static int handleRedir(char **argv);
-static char* handleRedirOperator(char **argv, bool *inRedir, bool *outRedir, 
-				 bool *outErrRedir);
+static char* handleRedirOperator(char **argv, enum redir_op *);
 static char* lookupPath(const char *bin);
 static char **buildArgv(struct_t *words);
 static struct_t *buildWordsList(char *str);
@@ -51,32 +57,32 @@ static sigjmp_buf buf;
 int
 main(int argc, char **argv) 
 {
-    char *home;
-    char *rcfname;
-    FILE *stream;
-    size_t sz;
+	char *home;
+	char *rcfname;
+	FILE *stream;
+	size_t sz;
 
-    commLineOptions(argc, argv);
-    setHandlers();
+	commLineOptions(argc, argv);
+	setHandlers();
 
-    if ( !(home = getenv("HOME")) )
-	fatal("Could not retrieve HOME environment variable\n");    
+	if ( !(home = getenv("HOME")) )
+		fatal("Could not retrieve HOME environment variable\n");
     
-    sz = strlen(home) + strlen("/") + strlen(RC_FILE_NAME) + 1;
-    rcfname = (char*) calloc(sz, sizeof(char));
+	sz = strlen(home) + strlen("/") + strlen(RC_FILE_NAME) + 1;
+	rcfname = (char*) calloc(sz, sizeof(char));
 
-    strlcat(rcfname, home, sz);
-    strlcat(rcfname, "/", sz);
-    strlcat(rcfname, RC_FILE_NAME, sz);
+	strlcat(rcfname, home, sz);
+	strlcat(rcfname, "/", sz);
+	strlcat(rcfname, RC_FILE_NAME, sz);
 
-    if ( (stream = fopen(rcfname, "r")) ) {
-	prompt(stream);
-	fclose(stream);
-	free(rcfname);
+	if ( (stream = fopen(rcfname, "r")) != NULL) {
+		prompt(stream);
+		fclose(stream);
+		free(rcfname);
     }
 
-    prompt(stdin);
-    return 0;
+	prompt(stdin);
+	return 0;
 }
 
 static int
@@ -89,13 +95,12 @@ static int
 */
 prompt(FILE *fp)
 {
-    struct_t *words;
-
-    int nread;
-    int status;
-    char *str = NULL;
-    size_t iniSize = 100;
-    char *prmpt = "$";
+	struct_t *words;
+	int status;
+	size_t iniSize = 100;
+	ssize_t nread;
+	char *str = NULL;
+	char *prmpt = "$";
 
     struct_t *ps1;
 
@@ -104,8 +109,6 @@ prompt(FILE *fp)
 	if (fp != stdin && feof(fp))
 	    break;
 
-	// if sigsetjmp is returning for the second time, deallocate memory 
-	// previously used and continue
 	if (sigsetjmp(buf, 1)) {
 	    free(str);
 	    deallocStruct(&words);
@@ -530,41 +533,28 @@ static int
 */
 handleRedir(char **argv)
 {
-    errno = 0;
-    int fd;
-    bool inRedir, outRedir, outErrRedir;
-    char *filename = handleRedirOperator(argv, &inRedir, &outRedir,
-					 &outErrRedir);
+	int fd;
+	char *filename;
+	enum redir_op redir_op;
 
-    if (inRedir)
-	fd = open(filename, O_RDONLY);
-    else if (outRedir | outErrRedir)
-	fd = open(filename, O_WRONLY | O_TRUNC | O_CREAT,
-		  S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-    else
-	fd = -1;
+	filename = handleRedirOperator(argv, &redir_op);
 
-    if (fd == -1) {
-	char *str = strerror(errno);
-	if (inRedir)
-	    fprintf(stderr, "%s. Falling back to STDIN\n", str);
-	else if (outRedir)
-	    fprintf(stderr, "%s. Falling back to STDOUT\n", str);
-	else if (outErrRedir)
-	    fprintf(stderr, "%s. Falling back to STDOUT and STDERR\n", str);
-    }
+	if (redir_op & REDIR_IN) {
+		if ((fd = open(filename, O_RDONLY)) == -1)
+			goto error;
+		dup2(fd, 0);
+	} else if (redir_op & (REDIR_OUT | REDIR_ERR)) {
+		if ((fd = open(filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1)
+			goto error;
+		dup2(fd, 1);
+		if (redir_op & REDIR_ERR)
+			dup2(fd, 2);
+	}
 
-    if (inRedir)
-	dup2(fd, 0);
-    else if (outRedir)
-	dup2(fd, 1);
-    else if (outErrRedir) {
-	dup2(fd, 1);
-	dup2(fd, 2);
-    }
-
-    close(fd);
-    return errno;
+	return 0;
+error:
+	fprintf(stderr, "Redir failed (%s)\n", strerror(errno));
+	return -1;
 }
 
 static char*
@@ -575,44 +565,33 @@ static char*
    are set to indicate the appropriate redirection operation
    Return: name of the file to/from which to redirect
 */
-handleRedirOperator(char **argv, bool *inRedir, bool *outRedir, 
-		    bool *outErrRedir)
+handleRedirOperator(char **argv, enum redir_op *redir_op)
 {
-    char **aux = NULL;
-    char *filename = NULL;
+	char **aux;
+	char *filename;
 
-    *inRedir = false;
-    *outRedir = false;
-    *outErrRedir = false;
+	filename  = NULL;
+	*redir_op = REDIR_NO;
 
-    for (aux = argv; *aux; aux++) {
-	if (strcmp(*aux, "<") == 0) {
-	    *inRedir = true;
-	    filename = strdup(*(aux + 1));
-	    *aux = NULL;
-	    break;
+	for (aux = argv; *aux; aux++) {
+		if (**aux == '<') {
+			*redir_op = REDIR_IN;
+			filename = strdup(*(aux + 1));
+			break;
+		}
+		if (**aux == '>') {
+			*redir_op = REDIR_OUT;
+			filename = strdup(*(aux + 1));
+			break;
+		}
+		if (**aux == '&' && *(*aux + 1) == '>') {
+			*redir_op = REDIR_ERR;
+			filename = strdup(*(aux + 1));
+			break;
+		}
 	}
-	else if (strcmp(*aux, ">") == 0) {
-	    *outRedir = true;
-	    filename = strdup(*(aux + 1));
-	    *aux = NULL;
-	    break;
-	} 
-	else if (strcmp(*aux, "&>") == 0) {
-	    *outErrRedir = true;
-	    filename = strdup(*(aux + 1));
-	    *aux = NULL;
-	    break;
-	}
-	else if (strcmp(*aux, "&") == 0 && strcmp(*(aux + 1), ">") == 0) {
-	    *outErrRedir = true;
-	    filename = strdup(*(aux + 2));
-	    *aux = NULL;
-	    break;
-	}
-    }
 
-    return filename;
+	return filename;
 }
 
 static struct_t *
