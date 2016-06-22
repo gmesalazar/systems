@@ -1,8 +1,3 @@
-/* 
-   Implementation of a linked list to provide quick access to the headers 
-   a given archive contains
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

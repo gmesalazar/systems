@@ -1,5 +1,5 @@
 CC      := gcc
-FLAGS   := -Wall -g -O2 -I../util
+FLAGS   := -Wall -g -O2 -I../lib
 
 MAIN    := uws
 UTIL    := util
@@ -13,7 +13,7 @@ $(MAIN): $(MAIN).o $(UTIL).o
 $(MAIN).o: $(MAIN).c
 	$(CC) $(FLAGS) -c $<
 
-$(UTIL).o: ../util/$(UTIL).c
+$(UTIL).o: ../lib/$(UTIL).c
 	$(CC) $(FLAGS) -c $<
 
 clean:

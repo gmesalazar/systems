@@ -1,3 +1,4 @@
+#include <error.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,7 +67,7 @@ main(int argc, char **argv)
 	setHandlers();
 
 	if ((home = getenv("HOME")) == NULL)
-		fatal("Could not retrieve HOME environment variable\n");
+		error(1, 0, "Could not retrieve HOME environment variable\n");
     
 	sz = strlen(home) + strlen("/") + strlen(RC_FILE_NAME) + 1;
 	rcfname = (char*) calloc(sz, sizeof(char));
@@ -116,7 +117,7 @@ prompt(FILE *fp)
 		}
 		str = (char *) calloc(iniSize + 1, sizeof(char));
 		if (str == NULL)
-			fatal("Could not allocate string of size %d bytes\n", iniSize + 1);
+			error(1, 0, "Could not allocate string of size %zu bytes\n", iniSize + 1);
 		nread = getline (&str, &iniSize, fp);
 		if (nread == -1) {
 			free(str);
@@ -643,7 +644,7 @@ histSubst(struct_t **words)
 	newList = cloneList(*words);
 	new = (struct_t*) calloc(1, sizeof(struct_t));
 	if (!new)
-	    fatal("Could not allocate new node\n");
+	    error(1, 0, "Could not allocate new node\n");
 	new->structType = HIST_LIST;
 	new->histData.command = newList;
 	new->next = NULL;
@@ -813,7 +814,7 @@ set(char *varName, char *varValue)
     new = (struct_t*) calloc(1, sizeof(struct_t));
     new->structType = TABLE;
     if (new == NULL)
-	fatal("Could not allocate table node");
+	error(1, 0, "Could not allocate table node");
     new->tableData.varName = strdup(varName);
     new->tableData.varValue = strdup(varValue);
     insertNode(&varTableGl, new);
