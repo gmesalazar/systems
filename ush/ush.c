@@ -65,7 +65,7 @@ main(int argc, char **argv)
 	commLineOptions(argc, argv);
 	setHandlers();
 
-	if ( !(home = getenv("HOME")) )
+	if ((home = getenv("HOME")) == NULL)
 		fatal("Could not retrieve HOME environment variable\n");
     
 	sz = strlen(home) + strlen("/") + strlen(RC_FILE_NAME) + 1;
@@ -75,24 +75,17 @@ main(int argc, char **argv)
 	strlcat(rcfname, "/", sz);
 	strlcat(rcfname, RC_FILE_NAME, sz);
 
-	if ( (stream = fopen(rcfname, "r")) != NULL) {
+	if ((stream = fopen(rcfname, "r")) != NULL) {
 		prompt(stream);
 		fclose(stream);
 		free(rcfname);
-    }
+	}
 
 	prompt(stdin);
 	return 0;
 }
 
 static int
-/* 
-   Show the prompt, read command, invoke expansions-handling
-   functions, and the execCommand function.
-
-   Receive: file pointer of the steam to read from
-   Return: 0 on success, -1 otherwise
-*/
 prompt(FILE *fp)
 {
 	struct_t *words;
@@ -102,93 +95,72 @@ prompt(FILE *fp)
 	char *str = NULL;
 	char *prmpt = "$";
 
-    struct_t *ps1;
+	struct_t *ps1;
 
-    while (true) {
-
-	if (fp != stdin && feof(fp))
-	    break;
-
-	if (sigsetjmp(buf, 1)) {
-	    free(str);
-	    deallocStruct(&words);
-	    printf("\n");
+	while (true) {
+		if (fp != stdin && feof(fp))
+			break;
+		if (sigsetjmp(buf, 1)) {
+			free(str);
+			deallocStruct(&words);
+			printf("\n");
+		}
+		ps1 = lookupTable("PS1");
+		if (fp == stdin && ps1)
+			prmpt = ps1->tableData.varValue;
+		if (fp == stdin && !ps1)
+			ps1 = set("PS1", prmpt);
+		if (fp == stdin) {
+			printf(" %s ", prmpt);
+			fflush(stdout);
+		}
+		str = (char *) calloc(iniSize + 1, sizeof(char));
+		if (str == NULL)
+			fatal("Could not allocate string of size %d bytes\n", iniSize + 1);
+		nread = getline (&str, &iniSize, fp);
+		if (nread == -1) {
+			free(str);
+			continue;
+		}
+		if (str[nread - 1] == '\n')
+			str[nread - 1] = '\0';
+		words = buildWordsList(str);
+		if (!words) {
+			free(str);
+			deallocStruct(&words);
+			continue;
+		}
+		histSubst(&words);
+		if (verbose)
+			printCommand(words);
+		varExpansion(&words);
+		if (verbose)
+			printCommand(words);
+		
+		if (filenameCompl(words) == 0) {
+			free(str);
+			deallocStruct(&words);
+			continue;
+		}
+		if (strcmp(words->wordData.word, "exit") == 0) {
+			free(str);
+			deallocStruct(&words);
+			break;
+		}
+		status = execCommand(words);
+		if (fp == stdin)
+			printf("%d\n", status);
+		free(str);
+		deallocStruct(&words);
 	}
-
-	ps1 = lookupTable("PS1");
-	if (fp == stdin && ps1)
-	    prmpt = ps1->tableData.varValue;
-	if (fp == stdin && !ps1)
-	    ps1 = set("PS1", prmpt);
-
 	if (fp == stdin) {
-	    printf(" %s ", prmpt);
-	    fflush(stdout);
+		deallocStruct(&varTableGl);
+		deallocStruct(&historyGl);
 	}
-
-	str = (char *) calloc(iniSize + 1, sizeof(char));
-	if (str == NULL)
-	    fatal("Could not allocate string of size %d bytes\n", iniSize + 1);
- 
-	nread = getline (&str, &iniSize, fp);
-
-	if (nread == -1) {
-	    free(str);
-	    continue;
-	}
-
-	if (str[nread - 1] == '\n')
-	    str[nread - 1] = '\0';
-
-	words = buildWordsList(str);
-	if ( !words ) {
-	    free(str);
-	    deallocStruct(&words);
-	    continue;
-	}
-
-	histSubst(&words);
-	if (verbose)
-	    printCommand(words);
-	varExpansion(&words);
-	if (verbose)
-	    printCommand(words);
-	
-	if (filenameCompl(words) == 0) {
-	    free(str);
-	    deallocStruct(&words);
-	    continue;
-	}
-
-	if (strcmp(words->wordData.word, "exit") == 0) {
-	    free(str);
-	    deallocStruct(&words);
-	    break;
-	}
-
-	status = execCommand(words);
-
-	if (fp == stdin)
-	    printf("%d\n", status);
-
-	free(str);
-	deallocStruct(&words);
-    }
-
-    if (fp == stdin) {
-	deallocStruct(&varTableGl);
-	deallocStruct(&historyGl);
-    }
-    return 0;
+	return 0;
 }
 
 static char**
-/* 
-   Build an 'argv' array out of a linked list of words
-
-   Receive: linked list of words
-   Return: array of words (representing argv) on success, NULL otherwise
-*/
 buildArgv(struct_t *words) 
 {
     struct_t *aux = NULL;
@@ -209,12 +181,6 @@ buildArgv(struct_t *words)
 }
 
 static int
-/* 
-   Get the arguments (variable name and value) from the list of words.
-
-   Receive: linked list of words, pointer to varName and varValue strings
-   Return: 0 on success, -1 otherwise
-*/
 getSetArgs(struct_t *words, char **varName, char **varValue) 
 {    
     struct_t *aux = words->next;
@@ -250,14 +216,6 @@ getSetArgs(struct_t *words, char **varName, char **varValue)
 }
 
 static int
-/* 
-   Execute builtin commands and invoke commands-handling function
-
-   Receive: linked list of words
-   Return:
-   Builtin command: 0 on success, -1 otherwise
-   Stand-alone executable: program's exit status
-*/
 execCommand(struct_t *words) 
 {
     struct_t *aux = words;
@@ -340,13 +298,6 @@ execCommand(struct_t *words)
 }
 
 static int
-/* 
-   Check whether or not a command has a pipe sign to correctly
-   handle the command
-
-   Receive: linked list of words
-   Return: exit status of the command or -1
-*/
 execWrapper(struct_t *words) 
 {
     struct_t *pipe = NULL;
@@ -383,13 +334,6 @@ execWrapper(struct_t *words)
 }
 
 static int
-/* 
-   Execute a command with pipes
-
-   Receive: linked list of words
-   Return: exit status of the command or -1
-*/
-
 execWithPipes(struct_t *words) 
 {
     int status = -1;
@@ -440,12 +384,6 @@ execWithPipes(struct_t *words)
 }
 
 static int
-/* 
-   Handle the execution of a stand-alone executable
-
-   Receive: array of words (command)
-   Return: the program's exit status on success, 127 otherwise
-*/
 execExec(struct_t *words)
 {
     int status = -1;
@@ -486,12 +424,6 @@ execExec(struct_t *words)
 }
 
 static char*
-/* 
-   Search each path in the PATH environment variable for the executable file
-
-   Receive: executable name
-   Return: fully-qualified name of the executable on success, NULL otherwise
-*/
 lookupPath(const char *progName) 
 {
     char *env = strdup(getenv("PATH"));
@@ -524,13 +456,6 @@ lookupPath(const char *progName)
 }
 
 static int
-/* 
-   Handle IO redirection
-
-   Receive: name of the file to/from which redirect and boolean variables
-   indicating the redirection to be done
-   Return: 0 on success, errno otherwise
-*/
 handleRedir(char **argv)
 {
 	int fd;
@@ -558,13 +483,6 @@ error:
 }
 
 static char*
-/* 
-   Scan the command and set the appropriate redirection boolean variable
-
-   Receive: array of words (command) and pointer to boolean variables that
-   are set to indicate the appropriate redirection operation
-   Return: name of the file to/from which to redirect
-*/
 handleRedirOperator(char **argv, enum redir_op *redir_op)
 {
 	char **aux;
@@ -595,12 +513,6 @@ handleRedirOperator(char **argv, enum redir_op *redir_op)
 }
 
 static struct_t *
-/* 
-   Build a linked list of words out of the command string
-
-   Receive: command string entered to the shell
-   Return: pointer to the first node of the list
-*/
 buildWordsList(char *str) 
 {
     char *token = NULL;
@@ -632,12 +544,6 @@ buildWordsList(char *str)
 }
 
 static int
-/*
-  Perform history substitutions on the linked list of words
-
-  Receive: linked list of words (command)
-  Return: 0 on success, -1 otherwise
-*/
 histSubst(struct_t **words)
 {
     struct_t *aux = NULL;
@@ -750,12 +656,6 @@ histSubst(struct_t **words)
 }
 
 static int
-/* 
-   Perform var expansions on the linked list of words
-
-   Receive: linked list of words (command)
-   Return: 0 on success, -1 otherwise
-*/
 varExpansion(struct_t **words)
 {
     size_t sz = 0;
@@ -807,12 +707,6 @@ varExpansion(struct_t **words)
 }
 
 static int
-/* 
-   Print the matching(s) for the filename in a command
-
-   Receive: linked list of words (command)
-   Return: 0 on success, -1 otherwise
-*/
 filenameCompl(struct_t *words) 
 {
     struct_t *aux = NULL;
@@ -893,13 +787,7 @@ filenameCompl(struct_t *words)
 }
 
 static struct_t *
-/*
-  Insert a shell variable into the table of variables
-
-  Receive: name and value of the variable
-  Return: pointer to the inserted node on success, NULL otherwise
-*/
-set (char *varName, char *varValue) 
+set(char *varName, char *varValue) 
 {
     struct_t *aux = NULL;
     struct_t *new = NULL;
@@ -934,13 +822,7 @@ set (char *varName, char *varValue)
 }
 
 static int 
-/* 
-   Remove a shell variable from the table of variables
-
-   Receive: name of the variable
-   Return: 0 on success (removed), -1 otherwise
-*/
-unset (char *varName) 
+unset(char *varName) 
 {
     struct_t *aux = lookupTable(varName);
 
@@ -964,13 +846,7 @@ unset (char *varName)
 }
 
 static struct_t*
-/* 
-   Search the table of variables for a given shell variable
-
-   Receive: name of the variable
-   Return: pointer to the node on success, NULL otherwise
-*/
-lookupTable (const char *varName) 
+lookupTable(const char *varName) 
 {
     struct_t *aux = varTableGl;
     while (aux && ((strcmp(aux->tableData.varName, varName) != 0)) )
@@ -979,11 +855,6 @@ lookupTable (const char *varName)
 }
 
 static void
-/* 
-   Print the linked list of words (command)
-
-   Receive: linked list of words
-*/
 printCommand(struct_t *words) 
 {
     struct_t *aux = words;
@@ -997,11 +868,6 @@ printCommand(struct_t *words)
 }
 
 static void
-/* 
-   Handle command line options
-
-   Receive: argc (args counter) and argv (args values)
-*/
 commLineOptions(int argc, char **argv) 
 {
     int i;
@@ -1019,9 +885,6 @@ commLineOptions(int argc, char **argv)
 }
 
 static void
-/* 
-   Print a help message in case the shell was not properly invoked
-*/
 printHelp(void) 
 {
     printf("mysh, version 1.0\n\n");
@@ -1041,9 +904,6 @@ printHelp(void)
 }
 
 static void
-/*
-  Set the signal handlers for SIGINT, SIGQUIT, and SIGTSTP
-*/
 setHandlers(void)
 {
     struct sigaction new;
@@ -1058,11 +918,6 @@ setHandlers(void)
 }
 
 static void
-/* 
-   Handle the signals generated by CTRL-C and CTRL-Z
-
-   Receive: signal number
-*/
 sigHandler(int sig) 
 {
     siglongjmp(buf, 1);
