@@ -1,6 +1,6 @@
 CC      := gcc
 FLAGS   := -Wall -g -O2
-MAIN    := pt
+MAIN    := upt
 
 all: $(MAIN)
 

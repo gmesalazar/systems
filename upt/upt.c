@@ -39,7 +39,7 @@ traverse(char *name, int isdir, int n)
 			printf("| d: %s\n", ent->d_name);
 			traverse(ent->d_name, 1, n + 1);
 		} else if (ent->d_type == DT_REG) {
-			printf("| r: %s\n", ent->d_name);
+			printf("| f: %s\n", ent->d_name);
 		}
 	
     }
