@@ -6,36 +6,36 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
-#include <utime.h>
-#include <unistd.h>
-#include <stdarg.h>
 #include <stdint.h>
+#include <time.h>
+#include <unistd.h>
+#include <utime.h>
 #include <bsd/stdlib.h>
 #include <bsd/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "include/list.h"
 #include "include/uar.h"
 
 
 /* Static declarations -- Main operations */
-static int extract (char *ar_name, char *file_name);
-static void print_table (char *arch_name, char *fname);
-static int replace_or_add (char *ar_name, char *file_name);
-static int delete_file (char *ar_name, char *file_name);
+static int extract(char *ar_name, char *file_name);
+static void print_table(char *arch_name, char *fname);
+static int replace_or_add(char *ar_name, char *file_name);
+static int delete_file(char *ar_name, char *file_name);
 
 /* Static declarations -- Helper functions*/
 static void print_err (char *fmt, ...);
 static void print_usage (void);
 static char get_op (int argc, char **argv);
 static void check_archive (char *fname, bool ck_exist);
-static int parse_archive (char *fname);
+static int parse_archive(char *fname);
 static uint32_t get_acc_size (uint32_t upto);
 
 int
@@ -176,7 +176,7 @@ static void
 /* Print the contents of the archive. If a file name is passed, it's printed out
    only if it's contained in the archive; if NULL is passed, all the files' 
    names are printed out */
-print_table (char *arch_name, char *fname) 
+print_table(char *arch_name, char *fname)
 {
 	struct node *node = NULL;
 
@@ -196,7 +196,7 @@ print_table (char *arch_name, char *fname)
 }
 
 static int
-extract_aux (char *ar_name, struct node *node) 
+extract_aux(char *ar_name, struct node *node)
 {
 	FILE *file;
 	FILE *arch;
@@ -233,211 +233,205 @@ extract_aux (char *ar_name, struct node *node)
 }
 
 static int
-extract (char *ar_name, char *file_name)
-{    
-    struct node *ptr = NULL;
-    
-    check_archive(ar_name, true);
-    parse_archive(ar_name);
+extract(char *ar_name, char *file_name)
+{
+	struct node *ptr = NULL;
 
-    if (!file_name)
-	while ( (ptr = list_next(ptr)) )
-	    extract_aux(ar_name, ptr);
+	check_archive(ar_name, true);
+	parse_archive(ar_name);
 
-    else {
-	if ( !(ptr = list_lookup(file_name)) ) {
-	    printf("%s: no entry %s found\n", getprogname(), file_name);
-	    exit(0);
-	}	
-	extract_aux(ar_name, ptr);
-    }
-    
-    return 0;
+	if (!file_name)
+	while ((ptr = list_next(ptr)) != NULL)
+		extract_aux(ar_name, ptr);
+
+	else {
+		if (!(ptr = list_lookup(file_name))) {
+			printf("%s: no entry %s found\n", getprogname(), file_name);
+			exit(0);
+		}
+		extract_aux(ar_name, ptr);
+	}
+
+	return 0;
 }
 
 static int
 /* Add or replace a file into the archive. */
-replace_or_add (char *ar_name, char *file_name)
+replace_or_add(char *ar_name, char *file_name)
 {    
-    FILE *file;
-    FILE *arch;
-    FILE *bkpfile;
+	FILE *file;
+	FILE *arch;
+	FILE *bkpfile;
 
-    struct stat file_st;
-    struct stat arch_st;
+	struct stat file_st;
+	struct stat arch_st;
 
-    struct node *ptr;
+	struct node *ptr;
 
-    size_t acc_size;
-    size_t bkpbuff_sz;
+	size_t acc_size;
+	size_t bkpbuff_sz;
 
-    uint32_t offset;
-    uint32_t offset_next;
+	uint32_t offset;
+	uint32_t offset_next;
 
-    size_t aux;
+	size_t aux;
 
 	int ch;
 
-    char tmpstr[FNAME_SZ + 1];
-    strlcpy(tmpstr, file_name, FNAME_SZ);
-    strlcat(tmpstr, "/", FNAME_SZ + 1);
+	char tmpstr[FNAME_SZ + 1];
+	strlcpy(tmpstr, file_name, FNAME_SZ);
+	strlcat(tmpstr, "/", FNAME_SZ + 1);
 
-    if ( !(file = fopen(file_name, "r")) )
-	print_err("%s: %s: No such file or directory\n", getprogname(),
+	if (!(file = fopen(file_name, "r")))
+		print_err("%s: %s: No such file or directory\n", getprogname(),
 		  file_name);
 
-    if ( !(arch = fopen(ar_name, "r+")) ) {
-	printf("%s: creating %s\n", getprogname(), ar_name);
-	arch = fopen(ar_name, "w+");
-	fprintf(arch, "%s", AR_MAGIC_STR);
-	fflush(arch);
-    }
-
-    check_archive(ar_name, false);
-    parse_archive(ar_name);	
-
-    fstat(fileno(file), &file_st);
-
-    /* The file is not in the archive */
-    if ( !(ptr = list_lookup(file_name)) ) {
-
-	fseek(arch, 0, SEEK_END);
-	fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr,
-		file_st.st_mtime, file_st.st_uid, file_st.st_gid, 
-		file_st.st_mode, file_st.st_size, 0x60, 0x0A);
-
-	rewind(file);
-	while ((ch = getc(file)) != EOF)
-	    putc(ch, arch);
-
-    } 
-    
-    /* The file is in the archive, let's replace it */
-    else {
-
-	fstat(fileno(arch), &arch_st);	
-	/* Summation of each file's body size, up to a given element in the 
-	   headers list -- in this case, up to (not including) the file to be 
-	   replaced */
-	acc_size = get_acc_size(ptr->seq);
-
-	/* The offset of the file to be replaced, i.e., number of bytes from the
-	   beginning of the file up to the start of the file's header */
-	offset = AR_MAGIC_SZ + (ptr->seq - 1) * F_HDR_SZ + acc_size;
-
-	/* The offset of the next file, after the one to be replaced; we need 
-	   this information to save and relocate subsequent contents of the 
-	   archive */
-	offset_next = offset + F_HDR_SZ + strtoul(ptr->header.fsize, NULL, 10);
-
-	/* Going to the right point to start backing up the contents of the 
-	   archive */
-	fseek(arch, offset_next, SEEK_SET);
-
-	bkpbuff_sz = arch_st.st_size - ftell(arch);
-
-	if ( !(bkpfile = tmpfile()) )
-	    print_err("%s: Could not create a temp file; aborting\n");
-
-	aux = bkpbuff_sz;
-	while (aux--) {
-	    ch = getc(arch);
-	    putc(ch, bkpfile);
+	if ( !(arch = fopen(ar_name, "r+")) ) {
+		printf("%s: creating %s\n", getprogname(), ar_name);
+		arch = fopen(ar_name, "w+");
+		fprintf(arch, "%s", AR_MAGIC_STR);
+		fflush(arch);
 	}
 
-	/* Seeking back to the file that's going to be replaced */
-	fseek(arch, offset, SEEK_SET);
-	fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr, 
-		file_st.st_mtime, file_st.st_uid, file_st.st_gid, 
-		file_st.st_mode, file_st.st_size, 0x60, 0x0A);
+	check_archive(ar_name, false);
+	parse_archive(ar_name);
 
-	while ((ch = getc(file)) != EOF)
-	    putc(ch, arch);
+	fstat(fileno(file), &file_st);
 
-	/* We may need to truncate the archive if the size of file being 
-	   replaced is less than its previous size */
-	if (file_st.st_size < strtol(ptr->header.fsize, NULL, 10))
-	    if ( (ftruncate(fileno(arch), ftell(arch))) == -1)
-		print_err("%s: %s: Could not complete the replace operation\n", 
-			  getprogname(), file_name);
+	/* The file is not in the archive */
+	if ((ptr = list_lookup(file_name)) == NULL) {
+		fseek(arch, 0, SEEK_END);
+		fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr,
+			file_st.st_mtime, file_st.st_uid, file_st.st_gid,
+			file_st.st_mode, file_st.st_size, 0x60, 0x0A);
 
-	/* Write the backed up portion of the archive back to it */
-	rewind(bkpfile);
-	aux = bkpbuff_sz;
-	while(aux--) {
-	    ch = getc(bkpfile);
-	    putc(ch, arch);
+		rewind(file);
+		while ((ch = getc(file)) != EOF)
+			putc(ch, arch);
 	}
 
-	/* We need to update the size of the file in the list of headers*/
-	snprintf(ptr->header.fsize, sizeof(ptr->header.fsize), "%lu", 
-		 file_st.st_size);
+	/* The file is in the archive, let's replace it */
+	else {
+		fstat(fileno(arch), &arch_st);
+		/* Summation of each file's body size, up to a given element in the
+		   headers list -- in this case, up to (not including) the file to be
+		   replaced */
+		acc_size = get_acc_size(ptr->seq);
 
-	fclose(bkpfile);
-    }
+		/* The offset of the file to be replaced, i.e., number of bytes from the
+		   beginning of the file up to the start of the file's header */
+		offset = AR_MAGIC_SZ + (ptr->seq - 1) * F_HDR_SZ + acc_size;
 
-    fclose(file);
-    fclose(arch);
+		/* The offset of the next file, after the one to be replaced; we need
+		   this information to save and relocate subsequent contents of the
+		   archive */
+		offset_next = offset + F_HDR_SZ + strtoul(ptr->header.fsize, NULL, 10);
 
-    return 0;
+		/* Going to the right point to start backing up the contents of the
+		   archive */
+		fseek(arch, offset_next, SEEK_SET);
+
+		bkpbuff_sz = arch_st.st_size - ftell(arch);
+
+		if ( !(bkpfile = tmpfile()) )
+			print_err("%s: Could not create a temp file; aborting\n");
+
+		aux = bkpbuff_sz;
+		while (aux--) {
+			ch = getc(arch);
+			putc(ch, bkpfile);
+		}
+
+		/* Seeking back to the file that's going to be replaced */
+		fseek(arch, offset, SEEK_SET);
+		fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr,
+			file_st.st_mtime, file_st.st_uid, file_st.st_gid,
+			file_st.st_mode, file_st.st_size, 0x60, 0x0A);
+
+		while ((ch = getc(file)) != EOF)
+			putc(ch, arch);
+
+		/* We may need to truncate the archive if the size of file being
+		   replaced is less than its previous size */
+		if (file_st.st_size < strtol(ptr->header.fsize, NULL, 10))
+			if ( (ftruncate(fileno(arch), ftell(arch))) == -1)
+			print_err("%s: %s: Could not complete the replace operation\n",
+				  getprogname(), file_name);
+
+		/* Write the backed up portion of the archive back to it */
+		rewind(bkpfile);
+		aux = bkpbuff_sz;
+		while(aux--) {
+			ch = getc(bkpfile);
+			putc(ch, arch);
+		}
+
+		/* We need to update the size of the file in the list of headers*/
+		snprintf(ptr->header.fsize, sizeof(ptr->header.fsize), "%lu",
+			 file_st.st_size);
+
+		fclose(bkpfile);
+	}
+
+	fclose(file);
+	fclose(arch);
+
+	return 0;
 }
 
 static int
 delete_file (char *ar_name, char *file_name)
 {
-    FILE *arch;
-    char *bkpbuff;
+	FILE *arch;
+	char *bkpbuff;
 
-    size_t acc_size;
-    size_t bkpbuff_sz;
+	size_t acc_size;
+	size_t bkpbuff_sz;
 
-    uint32_t offset_header;
-    uint32_t offset_next;
+	uint32_t offset_header;
+	uint32_t offset_next;
 
-    struct node *ptr;
-    struct stat arch_st;
+	struct node *ptr;
+	struct stat arch_st;
 
-    check_archive(ar_name, true);
-    parse_archive(ar_name);
+	check_archive(ar_name, true);
+	parse_archive(ar_name);
 
-    if ( !(arch = fopen(ar_name, "r+")) )
-	print_err("%s: %s: Could not open the archive\n", getprogname(),  
+	if ( !(arch = fopen(ar_name, "r+")) )
+		print_err("%s: %s: Could not open the archive\n", getprogname(),
 		  ar_name);
 
-    if ( !(ptr = list_lookup(file_name)) ) {
-	printf("%s: no entry %s found\n", getprogname(), file_name);
-	exit(0);
-    }
+	if ( !(ptr = list_lookup(file_name)) ) {
+		printf("%s: no entry %s found\n", getprogname(), file_name);
+		exit(0);
+	}
 
-    else {
-	acc_size = get_acc_size(ptr->seq);
-	offset_header = AR_MAGIC_SZ + (ptr->seq - 1) * F_HDR_SZ + 
-	    acc_size;
-	offset_next = offset_header + F_HDR_SZ + 
-	    strtoul(ptr->header.fsize, NULL, 10);
-	
-	fseek(arch, offset_next, SEEK_SET);
+	else {
+		acc_size = get_acc_size(ptr->seq);
+		offset_header = AR_MAGIC_SZ + (ptr->seq - 1) * F_HDR_SZ +
+			acc_size;
+		offset_next = offset_header + F_HDR_SZ +
+			strtoul(ptr->header.fsize, NULL, 10);
 
-	fstat(fileno(arch), &arch_st);
+		fseek(arch, offset_next, SEEK_SET);
+		fstat(fileno(arch), &arch_st);
+		bkpbuff_sz = arch_st.st_size - ftell(arch);
+		bkpbuff = (char*) calloc(bkpbuff_sz + 1, sizeof(char));
 
-	bkpbuff_sz = arch_st.st_size - ftell(arch);
+		if ((fread(bkpbuff, sizeof(char), bkpbuff_sz, arch)) != bkpbuff_sz)
+			print_err("%s: %s: Could not delete file\n", getprogname(), file_name);
 
-	bkpbuff = (char*) calloc(bkpbuff_sz + 1, sizeof(char));
+		fseek(arch, offset_header, SEEK_SET);
+		fwrite(bkpbuff, sizeof(char), bkpbuff_sz, arch);
 
-	if ( (fread(bkpbuff, sizeof(char), bkpbuff_sz, arch)) != bkpbuff_sz)
-	    print_err("%s: %s: Could not delete file\n", getprogname(), file_name);
+		if ((ftruncate(fileno(arch), ftell(arch))) == -1)
+			print_err("%s: %s: Could not complete deletion of file\n",
+				  getprogname(), file_name);
 
-	fseek(arch, offset_header, SEEK_SET);
-	fwrite(bkpbuff, sizeof(char), bkpbuff_sz, arch);
+		free(bkpbuff);
+	}
 
-	if ( (ftruncate(fileno(arch), ftell(arch))) == -1 )
-	    print_err("%s: %s: Could not complete deletion of file\n", 
-		      getprogname(), file_name);
-	
-	free(bkpbuff);
-    }
-
-    return 0;
+	return 0;
 }
 
 static uint32_t
@@ -446,17 +440,15 @@ static uint32_t
    identified by its position in the archive and list of headers */
 get_acc_size (uint32_t upto)
 {
+	size_t acc = 0;
+	struct node *aux = NULL;
 
-    size_t acc = 0;
-    struct node *aux = NULL;
+	while ((aux = list_next(aux)) != NULL && (aux->seq < upto))
+		acc += strtoul(aux->header.fsize, NULL, 10);
+	while ((aux = list_next(aux)) != NULL);
 
-    while ( (aux = list_next(aux)) && (aux->seq < upto) )
-        acc += strtoul(aux->header.fsize, NULL, 10);
-
-    while ( (aux = list_next(aux)) );
-
-    if (acc <= 1)
-	return 0;
-    else
-	return acc;
+	if (acc <= 1)
+		return 0;
+	else
+		return acc;
 }

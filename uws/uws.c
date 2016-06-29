@@ -142,38 +142,38 @@ doNetworkingStuff(void)
 }
 
 static void
-*threadCallback(void* sfd)
+*threadCallback(void* data)
 {
-    int csocket = *(int*) sfd;
-    readRequest(csocket);
-    close(csocket);
-    pthread_exit(NULL);
+	int sfd = *(int*) data;
+	readRequest(sfd);
+	close(sfd);
+	pthread_exit(NULL);
 }
 
 static void
 readRequest(int sfd) 
 {
-    char *buff = NULL;
-    ssize_t nread;
+	char *buff;
+	ssize_t nread;
 
-    buff = (char *) calloc((long)PACKET_BUFF_SZ, sizeof(char));
+	buff = (char *) calloc((long)PACKET_BUFF_SZ, sizeof(char));
+
+	if (!buff)
+		return;
 	
-    if (!buff)
-	return;
-	
-    /* read request line */
-    nread = readLine(sfd, buff, (long) PACKET_BUFF_SZ);
+	/* read request line */
+	nread = readLine(sfd, buff, (long) PACKET_BUFF_SZ);
 
-    /* ignore request headers -- we don't need them :) */
-    while(true) {
-	char tmp[PACKET_BUFF_SZ] = {'\0'};
-	readLine(sfd, tmp, (long) PACKET_BUFF_SZ);
-	if (strcmp(tmp, "\r\n") == 0)
-	    break;
-    }
-    processRequest(sfd, buff, nread);
+	/* ignore request headers -- we don't need them :) */
+	while(true) {
+		char tmp[PACKET_BUFF_SZ] = {'\0'};
+		readLine(sfd, tmp, (long) PACKET_BUFF_SZ);
+		if (strcmp(tmp, "\r\n") == 0)
+			break;
+	}
 
-    free(buff);
+	processRequest(sfd, buff, nread);
+	free(buff);
 }
 
 static void
@@ -181,7 +181,8 @@ processRequest(int sfd, char *buff, ssize_t sz)
 {
     char *reqLine[3];
     char *aux;
-    
+	(void) sz;
+
     aux = strtok(buff, " ");
     reqLine[0] = aux;
     aux = strtok(NULL, " ");
@@ -191,26 +192,22 @@ processRequest(int sfd, char *buff, ssize_t sz)
    
     if (strcmp(reqLine[0], "GET") == 0)
 	processGETReq(sfd, reqLine);
-    else
-	;
 }
 
 static void
 processGETReq(int sfd, char **reqLine)
 {
-    FILE *fp = NULL;
-    char ch;
+	FILE *fp = NULL;
+	char ch;
 
-    if (strlen(reqLine[1]) == 1)
-	reqLine[1] = "/index.html";
+	if (strlen(reqLine[1]) == 1)
+		reqLine[1] = "/index.html";
 
-    if ((fp = fopen(reqLine[1] + 1, "r"))) {
-	
-	writeHeader(sfd, found_header, sizeof(found_header)/sizeof(char*));
-	while ((ch = fgetc(fp)) != EOF)
-	    write(sfd, &ch, 1);
-
-	fclose(fp);
+	if ((fp = fopen(reqLine[1] + 1, "r")) != NULL) {
+		writeHeader(sfd, found_header, sizeof(found_header) / sizeof(char*));
+		while ((ch = fgetc(fp)) != EOF)
+			write(sfd, &ch, 1);
+		fclose(fp);
     }
 
     else {
@@ -230,43 +227,43 @@ processGETReq(int sfd, char **reqLine)
 static void
 writeHeader(int sfd, const char *header[], int sz)
 {
-    int i;
-    for (i = 0; i < sz; i++)
+	int i;
+	for (i = 0; i < sz; i++)
 	writeLine(sfd, header[i], strlen(header[i]));
 }
 
 static void
 logSockInfo(int sock, int inOut)
 {
-    socklen_t size;
-    struct sockaddr addr;
-    struct sockaddr_in *addrin;
-    char addrPrint[40];
+	socklen_t size;
+	struct sockaddr addr;
+	struct sockaddr_in *addrin;
+	char addrPrint[40];
 
-    size = sizeof(addr);
+	size = sizeof(addr);
 
-    if (inOut == 0)
-	getsockname(sock, &addr, &size);
-    else if (inOut == 1)
-	getpeername(sock, &addr, &size);
+	if (inOut == 0)
+		getsockname(sock, &addr, &size);
+	else if (inOut == 1)
+		getpeername(sock, &addr, &size);
 
-    addrin = (struct sockaddr_in*) &addr;
-    inet_ntop(addrin->sin_family, &(addrin->sin_addr), addrPrint, 40);
+	addrin = (struct sockaddr_in*) &addr;
+	inet_ntop(addrin->sin_family, &(addrin->sin_addr), addrPrint, 40);
 
-    if (inOut == 0)
-	printf("Listening on %s:%d\n", addrPrint, 
-	       ntohs(addrin->sin_port));
-    else if (inOut == 1)
-	printf("Accepted from %s:%d\n", addrPrint, 
-	       ntohs(addrin->sin_port));
+	if (inOut == 0)
+		printf("Listening on %s:%d\n", addrPrint, ntohs(addrin->sin_port));
+	else if (inOut == 1)
+		printf("Accepted from %s:%d\n", addrPrint, ntohs(addrin->sin_port));
 
-    fflush(stdout);
+	fflush(stdout);
 }
 
 void
 printHelp(int argc, char **argv) 
 {
-    fprintf(stdout, "USAGE: %s <options>\n", argv[0]);
-    fprintf(stdout, "\n<options>\n");
-    fprintf(stdout, "-start: start the webserver\n-verbose: activate verbose mode\n");
+	(void) argc;
+	fprintf(stdout, "USAGE: %s <options>\n", argv[0]);
+	fprintf(stdout, "\n<options>\n");
+	fprintf(stdout, "-start: start the webserver\n-verbose: activate"
+		" verbose mode\n");
 }

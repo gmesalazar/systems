@@ -164,56 +164,56 @@ prompt(FILE *fp)
 static char**
 buildArgv(struct_t *words) 
 {
-    struct_t *aux = NULL;
-    char **argv = NULL;
-    size_t sz, i;
+	struct_t *aux = NULL;
+	char **argv = NULL;
+	size_t sz, i;
 
-    if (!words)
-	return NULL;
+	if (!words)
+		return NULL;
 
-    for(aux = words, sz = 0; aux; aux = aux->next, sz++);
-    if ( !(argv = (char**) calloc(sz + 1, sizeof(char*))) )
-	return NULL;
-    for (i = 0, aux = words; i < sz; i++, aux = aux->next)
-	argv[i] = aux->wordData.word;
-    argv[i] = NULL;
-    
-    return argv;
+	for(aux = words, sz = 0; aux; aux = aux->next, sz++);
+	if ((argv = (char**) calloc(sz + 1, sizeof(char*))) == NULL)
+		return NULL;
+	for (i = 0, aux = words; i < sz; i++, aux = aux->next)
+		argv[i] = aux->wordData.word;
+	argv[i] = NULL;
+
+	return argv;
 }
 
 static int
 getSetArgs(struct_t *words, char **varName, char **varValue) 
 {    
-    struct_t *aux = words->next;
-    char *eq = NULL;
+	struct_t *aux = words->next;
+	char *eq = NULL;
 
-    if (!aux) {
-	*varName = NULL;
-	*varValue = NULL;
+	if (!aux) {
+		*varName = NULL;
+		*varValue = NULL;
+		return 0;
+	}
+	*varName = aux->wordData.word;
+
+	aux = aux->next;
+	if (!aux) {
+		fprintf(stderr, "Malformed expression\n");
+		return -1;
+	}
+	eq = aux->wordData.word;
+
+	aux = aux->next;
+	if (!aux) {
+		fprintf(stderr, "Malformed expression\n");
+		return -1;
+	}
+	*varValue = aux->wordData.word;
+
+	if (strcmp(eq, "=") != 0) {
+		fprintf(stderr, "Malformed expression\n");
+		return -1;
+	}
+
 	return 0;
-    }
-    *varName = aux->wordData.word;
-
-    aux = aux->next;
-    if (!aux) {
-	fprintf(stderr, "Malformed expression\n");
-	return -1;
-    }
-    eq = aux->wordData.word;
-
-    aux = aux->next;
-    if (!aux) {
-	fprintf(stderr, "Malformed expression\n");
-	return -1;
-    }
-    *varValue = aux->wordData.word;
-
-    if (strcmp(eq, "=") != 0) {
-	fprintf(stderr, "Malformed expression\n");
-	return -1;
-    }
-
-    return 0;
 }
 
 static int
@@ -269,7 +269,7 @@ execCommand(struct_t *words)
     }
     else if (strcmp(aux->wordData.word, "cd") == 0) {
 	const char *home = NULL;
-	if (!getcwd(lastDir, sizeof(lastDir)));
+	getcwd(lastDir, sizeof(lastDir));
 	
 	if (!aux->next) {
 	    if (!(home = getenv("HOME"))) {
@@ -602,7 +602,7 @@ histSubst(struct_t **words)
 
 	    // 'nth command'
 	    if ( (isNumber(++ptr)) ) {
-		num = atoi(ptr);
+		num = strtol(ptr, NULL, 10);
 		if (num <= 0)
 		    continue;
 
@@ -639,7 +639,7 @@ histSubst(struct_t **words)
 	aux = aux->next;
     }
 
-    if (hist && (histSizeGl < atoi(hist->tableData.varValue))) {
+    if (hist && (histSizeGl < strtoul(hist->tableData.varValue, NULL, 10))) {
 
 	newList = cloneList(*words);
 	new = (struct_t*) calloc(1, sizeof(struct_t));
@@ -921,5 +921,6 @@ setHandlers(void)
 static void
 sigHandler(int sig) 
 {
+	(void) sig;
     siglongjmp(buf, 1);
 }

@@ -1,6 +1,6 @@
 CC      := gcc
 
-FLAGS   := -Wall -g -O2 -I../lib
+FLAGS   := -Wall -Wextra -g -O2 -I../lib
 
 MAIN    := ush
 LIST    := list
