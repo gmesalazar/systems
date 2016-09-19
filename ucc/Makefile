@@ -36,7 +36,7 @@ $(OBJ:=.o):
 		$(CC) $(CCFLAGS) -c $<
 
 $(PARSER).c:	$(PARSER).y
-		$(YACC) -do $(PARSER).c $<
+		$(YACC) -d $(PARSER).c -o $<
 
 $(SCANNER).c:	$(SCANNER).l
 		$(LEX) -o $(SCANNER).c $<
