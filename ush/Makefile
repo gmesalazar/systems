@@ -1,5 +1,3 @@
-CC      := gcc
-
 FLAGS   := -Wall -Wextra -g -O2 -I../lib
 
 MAIN    := ush
@@ -9,7 +7,7 @@ UTIL    := util
 all: $(MAIN)
 
 $(MAIN): $(UTIL).o $(LIST).o $(MAIN).o
-	$(CC) $(FLAGS) $^ -lbsd -o $(MAIN)
+	$(CC) $(FLAGS) *.o -o $(MAIN)
 
 $(MAIN).o: $(MAIN).c
 	$(CC) $(FLAGS) -c $<
