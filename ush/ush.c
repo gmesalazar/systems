@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <fcntl.h>
 #include <setjmp.h>
 
@@ -23,6 +24,7 @@ enum redir_op {
 	REDIR_ERR = 0x4,
 };
 
+/* prototypes */
 static int prompt(FILE *fp);
 static int unset(char *varName);
 static int histSubst(struct_t **words);
@@ -40,20 +42,23 @@ static char **buildArgv(struct_t *words);
 static struct_t *buildWordsList(char *str);
 static struct_t *lookupTable(const char *varName);
 static struct_t *set(char *varName, char *varValue);
-
 static void commLineOptions(int argc, char **argv);
 static void printCommand(struct_t *words);
 static void setHandlers(void);
 static void sigHandler(int sig);
 static void printHelp(void);
+/* /prototypes */
 
+/* globals */
 static unsigned int histSizeGl = 0;
 static struct_t *varTableGl = NULL;
 static struct_t *historyGl = NULL;
 static bool verbose = false;
+static sigjmp_buf jmpbuf_gl;
+/* /globals */
 
-static sigjmp_buf buf;
 
+/* ush main*/
 int
 main(int argc, char **argv)
 {
@@ -84,6 +89,7 @@ main(int argc, char **argv)
 	prompt(stdin);
 	return 0;
 }
+/* ush main */
 
 static int
 prompt(FILE *fp)
@@ -100,7 +106,7 @@ prompt(FILE *fp)
 	while (true) {
 		if (fp != stdin && feof(fp))
 			break;
-		if (sigsetjmp(buf, 1)) {
+		if (sigsetjmp(jmpbuf_gl, 1)) {
 			free(str);
 			deallocStruct(&words);
 			printf("\n");
@@ -218,178 +224,175 @@ getSetArgs(struct_t *words, char **varName, char **varValue)
 static int
 execCommand(struct_t *words) 
 {
-    struct_t *aux = words;
-    char *varName;
-    char *varValue;
-    #define PATH_SZ 1024
-    static char lastDir[PATH_SZ] = "\0";
+	char *varName  = NULL;
+	char *varValue = NULL;
+	extern char **environ;
+	static char lastDir[MAXPATHLEN];
+	struct_t *aux = words;
 
-    extern char **environ;
+	if (strcmp(aux->wordData.word, "set") == 0) {
+		if(getSetArgs(words, &varName, &varValue) == 0)
+			set(varName, varValue);
+	}
+	else if (strcmp(aux->wordData.word, "unset") == 0) {
+		if (!words->next)
+			return -1;
+		unset(words->next->wordData.word);
+	}
+	else if (strcmp(aux->wordData.word, "setenv") == 0) {
+		char **env;
+		if (getSetArgs(words, &varName, &varValue) == 0) {
+			if (!varName || !varValue)
+				for (env = environ; *env; ++env)
+					printf("%s\n", *env);
+			setenv(varName, varValue, 1);
+		}
+	}
+	else if (strcmp(aux->wordData.word, "unsetenv") == 0) {
+		if (!words->next)
+			return -1;
+		unsetenv(words->next->wordData.word);
+	}
+	else if ((strcmp(aux->wordData.word, "cd") == 0) && aux->next &&
+		 (strcmp(aux->next->wordData.word, "-") == 0)) {
+		if (strlen(lastDir) == 0) {
+			fprintf(stderr, "cd: Last dir variable not set\n");
+			return -1;
+		}
+		else {
+			char temp[MAXPATHLEN];
+			getcwd(temp, sizeof(temp));
+			if (chdir(lastDir) == -1) {
+				fprintf(stderr, "%s\n", strerror(errno));
+				return -1;
+			}
+			printf("%s\n", lastDir);
+			strlcpy(lastDir, temp, MAXPATHLEN);
+		}
+	}
+	else if (strcmp(aux->wordData.word, "cd") == 0) {
+		const char *home = NULL;
+		getcwd(lastDir, sizeof(lastDir));
 
-    if (strcmp(aux->wordData.word, "set") == 0) {
-	if(getSetArgs(words, &varName, &varValue) == 0)
-	    set(varName, varValue);
-    }
-    else if (strcmp(aux->wordData.word, "unset") == 0) {
-	if (!words->next)
-	    return -1;
-	unset(words->next->wordData.word);
-    }
-    else if (strcmp(aux->wordData.word, "setenv") == 0) {
-	char **env;	
-	if (getSetArgs(words, &varName, &varValue) == 0) {
-	    if (!varName || !varValue)
-		for (env = environ; *env; ++env)
-		    printf("%s\n", *env);
-	    setenv(varName, varValue, 1);
+		if (!aux->next) {
+			if (!(home = getenv("HOME"))) {
+			fprintf(stderr, "%s\n", strerror(errno));
+			return -1;
+			}
+			if (chdir(home) == -1) {
+			fprintf(stderr, "%s\n", strerror(errno));
+			return -1;
+			}
+		}
+		else if (chdir(aux->next->wordData.word) == -1) {
+			fprintf(stderr, "%s\n", strerror(errno));
+			return -1;
+		}
 	}
-    }
-    else if (strcmp(aux->wordData.word, "unsetenv") == 0) {
-	if (!words->next)
-	    return -1;
-	unsetenv(words->next->wordData.word);
-    }
-    else if ((strcmp(aux->wordData.word, "cd") == 0) && aux->next &&
-	     (strcmp(aux->next->wordData.word, "-") == 0)) {
-
-	if (strlen(lastDir) == 0) {
-	    fprintf(stderr, "cd: Last dir variable not set\n");
-	    return -1;
-	} else {
-	    char temp[PATH_SZ];
-	    getcwd(temp, sizeof(temp));
-	    if (chdir(lastDir) == -1) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		return -1;
-	    }
-	    printf("%s\n", lastDir);
-	    strlcpy(lastDir, temp, PATH_SZ);
-	}
-    }
-    else if (strcmp(aux->wordData.word, "cd") == 0) {
-	const char *home = NULL;
-	getcwd(lastDir, sizeof(lastDir));
-	
-	if (!aux->next) {
-	    if (!(home = getenv("HOME"))) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		return -1;
-	    }
-	    if (chdir(home) == -1) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		return -1;
-	    }
-	}
-	else if (chdir(aux->next->wordData.word) == -1) {
-	    fprintf(stderr, "%s\n", strerror(errno));
-	    return -1;
-	}
-    }
-    else if (strcmp(aux->wordData.word, "history") == 0)
-	printStruct(historyGl);
-    else if (strcmp(aux->wordData.word, "verbose") == 0)
-	verbose = true;
-    else if (strcmp(aux->wordData.word, "nonverbose") == 0)
-	verbose = false;
-    else
-	return execWrapper(words);
-    
+	else if (strcmp(aux->wordData.word, "history") == 0)
+		printStruct(historyGl);
+	else if (strcmp(aux->wordData.word, "verbose") == 0)
+		verbose = true;
+	else if (strcmp(aux->wordData.word, "nonverbose") == 0)
+		verbose = false;
+	else
+		return execWrapper(words);
     return 0;
 }
 
 static int
 execWrapper(struct_t *words) 
 {
-    struct_t *pipe = NULL;
-    struct_t *aux = words;
-    int status = -1;
-    pid_t pid;
+	struct_t *pipe = NULL;
+	struct_t *aux = words;
+	int status = -1;
+	pid_t pid;
 
-    while (aux) {
-	if (strcmp(aux->wordData.word, "|") == 0) {
-	    pipe = aux;
-	    break;
+	while (aux) {
+		if (strcmp(aux->wordData.word, "|") == 0) {
+			pipe = aux;
+			break;
+		}
+		aux = aux->next;
 	}
-	aux = aux->next;
-    }
 
-    if (!pipe)
-	status = execExec(words);
-    else {
-	if ((pid = vfork()) < 0)
-	    fprintf(stderr, "Could not fork\n");
-	else if (pid == 0)
-	    execWithPipes(words);
+	if (!pipe)
+		status = execExec(words);
 	else {
-	    if (waitpid(pid, &status, 0) == -1) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		return -1;
-	    }
-	    status = status >> 8;
+		if ((pid = vfork()) < 0)
+			fprintf(stderr, "Could not fork\n");
+		else if (pid == 0)
+			execWithPipes(words);
+		else {
+			if (waitpid(pid, &status, 0) == -1) {
+				fprintf(stderr, "%s\n", strerror(errno));
+				return -1;
+			}
+			status = status >> 8;
+		}
+
 	}
 
-    }
-
-    return status;
+	return status;
 }
 
 static int
 execWithPipes(struct_t *words) 
 {
-    int status = -1;
-    struct_t* lastPipe = NULL;
-    struct_t* aux;
-    int pfd[2];
-    pid_t pid;
+	int status = -1;
+	struct_t* lastPipe = NULL;
+	struct_t* aux;
+	int pfd[2];
+	pid_t pid;
 
-    aux = words;
-    while (aux) {
-	if (strcmp(aux->wordData.word, "|") == 0)
-	    lastPipe = aux;
-	aux = aux->next;
-    }
+	aux = words;
+	while (aux) {
+		if (strcmp(aux->wordData.word, "|") == 0)
+			lastPipe = aux;
+		aux = aux->next;
+	}
 
-    if (!lastPipe) {
-	status = execExec(words);
-	exit(status);
-    } else {
-	aux = lastPipe->next;
-	lastPipe->prev->next = NULL;
+	if (!lastPipe) {
+		status = execExec(words);
+		exit(status);
+	} else {
+		aux = lastPipe->next;
+		lastPipe->prev->next = NULL;
 
-	if (pipe(pfd) < 0) {
-	    fprintf(stderr, "Could not pipe\n");
-	    exit(1);
-	}
- 
-	if ( (pid = vfork()) == - 1) {
-	    fprintf(stderr, "Could not fork\n");
-	    exit(1);
-	}
-	else if (pid == 0) {
-	    close(pfd[0]);
-	    dup2(pfd[1], STDOUT_FILENO);
-	    close(pfd[1]);
-	    execWithPipes(words);
-	}
-	else {
-	    close(pfd[1]);
-	    dup2(pfd[0], STDIN_FILENO);
-	    close(pfd[0]);
-	    status = execExec(aux);
-	    exit(status);
-	}
-    }
+		if (pipe(pfd) < 0) {
+			fprintf(stderr, "Could not pipe\n");
+			exit(1);
+		}
 
-    return status;
+		if ( (pid = vfork()) == - 1) {
+			fprintf(stderr, "Could not fork\n");
+			exit(1);
+		}
+		else if (pid == 0) {
+			close(pfd[0]);
+			dup2(pfd[1], STDOUT_FILENO);
+			close(pfd[1]);
+			execWithPipes(words);
+		}
+		else {
+			close(pfd[1]);
+			dup2(pfd[0], STDIN_FILENO);
+			close(pfd[0]);
+			status = execExec(aux);
+			exit(status);
+		}
+	}
+
+	return status;
 }
 
 static int
 execExec(struct_t *words)
 {
 	int status = -1;
+	char *filename = NULL;
 	char **argv = buildArgv(words);
 	char *compName = lookupPath(argv[0]);
-	char *filename = NULL;
 	pid_t pid;
 
 	if (!compName) {
@@ -515,32 +518,28 @@ handleRedirOperator(char **argv, enum redir_op *redir_op)
 static struct_t *
 buildWordsList(char *str) 
 {
-    char *token = NULL;
-    struct_t *words = NULL;
-    struct_t *word = NULL;
-    size_t sz = 0;
+	char *token = NULL;
+	struct_t *words = NULL;
+	struct_t *word = NULL;
+	size_t sz = 0;
 
-    if (!str)
-	return NULL;
+	if (!str)
+		return NULL;
 
-    token = strtok(str, " ");
-    while (token) {
+	for (token = strtok(str, " "); token; token = strtok(NULL, " ")) {
+		if (!(word = (struct_t*) calloc(1, sizeof(struct_t))))
+			return NULL;
 
-	if ( !(word = (struct_t*) calloc(1, sizeof(struct_t))) )
-	    return NULL;
+		word->structType = WORDS_LIST;
+		sz = strlen(token) + 1;
+		word->wordData.word = (char*) calloc(sz, sizeof(char));
+		strlcpy(word->wordData.word, token, sz);
 
-	word->structType = WORDS_LIST;
-	sz = strlen(token) + 1;
-	word->wordData.word = (char*) calloc(sz, sizeof(char));
-	strlcpy(word->wordData.word, token, sz);
+		if ((insertNode(&words, word) == -1))
+			return NULL;
+	}
 
-	if ( (insertNode(&words, word) == -1) )
-	    return NULL;
-
-	token = strtok(NULL, " ");
-    }
-
-    return words;
+	return words;
 }
 
 static int
@@ -699,81 +698,81 @@ varExpansion(struct_t **words)
 static int
 filenameCompl(struct_t *words) 
 {
-    struct_t *aux = NULL;
-    char *compname = NULL;
-    char *path = NULL;
-    char *filename = NULL;
-    size_t strSz;
-    int pathStrSz;
+	struct_t *aux = NULL;
+	char *compname = NULL;
+	char *path = NULL;
+	char *filename = NULL;
+	size_t strSz;
+	int pathStrSz;
 
-    DIR *dirp = NULL;
-    struct dirent *dire;
+	DIR *dirp = NULL;
+	struct dirent *dire;
 
-    if (!words)
-	return -1;
+	if (!words)
+		return -1;
 
-    aux = words;
-    while (aux->next)
-	aux = aux->next;
-    compname = aux->wordData.word;
+	aux = words;
+	while (aux->next)
+		aux = aux->next;
+	compname = aux->wordData.word;
 
-    strSz = strlen(compname);
+	strSz = strlen(compname);
 
-    if (!words->next) {
-	if (compname[strSz - 1] == '\t')
-	    compname[strSz - 1] = '\0';
-	return -1;
-    }
-
-    if (compname[strSz - 1] != '\t')
-	return -1;
-
-    compname[strSz - 1] = '\0';
-    
-    if (strstr(compname, "/")) {
-	
-	pathStrSz = strlen(compname);
-	while (pathStrSz > 0) {
-	    if (compname[pathStrSz - 1] == '/')
-		break;
-	    --pathStrSz;
+	if (!words->next) {
+		if (compname[strSz - 1] == '\t')
+			compname[strSz - 1] = '\0';
+		return -1;
 	}
-	
-	path = (char*) calloc(pathStrSz, sizeof(char));
-	strSz = strlen(compname) - pathStrSz + 1;
-	filename = (char*) calloc(strSz, sizeof(char));
-	
-	strlcpy(path, compname, pathStrSz);
-	strlcpy(filename, compname + pathStrSz, strSz);
 
-	dirp = opendir(path);
-    } 
-    else {
-	dirp = opendir(".");
-	filename = strdup(compname);
-    }
+	if (compname[strSz - 1] != '\t')
+		return -1;
 
-    if (!dirp) {
-	free(path);
-	free(filename);
-	return -1;
-    }
+	compname[strSz - 1] = '\0';
 
-    dire = readdir(dirp);
-    while (dire) {
-	if (startsWith(dire->d_name, filename) || (strSz == 1)) {
-	    if (strcmp(dire->d_name, ".") != 0 && 
-		strcmp(dire->d_name, "..") != 0)
-		printf(" %s\n", dire->d_name);
+	if (strstr(compname, "/")) {
+
+		pathStrSz = strlen(compname);
+		while (pathStrSz > 0) {
+			if (compname[pathStrSz - 1] == '/')
+				break;
+			--pathStrSz;
+		}
+
+		path = (char*) calloc(pathStrSz, sizeof(char));
+		strSz = strlen(compname) - pathStrSz + 1;
+		filename = (char*) calloc(strSz, sizeof(char));
+
+		strlcpy(path, compname, pathStrSz);
+		strlcpy(filename, compname + pathStrSz, strSz);
+
+		dirp = opendir(path);
 	}
+	else {
+		dirp = opendir(".");
+		filename = strdup(compname);
+	}
+
+	if (!dirp) {
+		free(path);
+		free(filename);
+		return -1;
+	}
+
 	dire = readdir(dirp);
-    }
+	while (dire) {
+		if (startsWith(dire->d_name, filename) || (strSz == 1)) {
+			if (strcmp(dire->d_name, ".") != 0 &&
+					strcmp(dire->d_name, "..") != 0)
+				printf(" %s\n", dire->d_name);
+		}
+		dire = readdir(dirp);
+	}
 
-    free(filename);
-    free(path);
-    closedir(dirp);
+	free(filename);
+	free(path);
+	closedir(dirp);
 
-    return 0;
+	return 0;
 }
 
 static struct_t *
@@ -834,7 +833,7 @@ unset(char *varName)
 	free(aux->tableData.varValue);
 	free(aux);
 
-    return 0;
+	return 0;
 }
 
 static struct_t*
@@ -864,32 +863,32 @@ commLineOptions(int argc, char **argv)
 {
 	int i;
 	for (i = 1; i < argc; i++) {
-	if (strcmp(argv[i], "-verbose") == 0)
-	    verbose = true;
-	else if (strcmp(argv[i], "-version") == 0) {
-	    printf("mysh, version 1.0\n");
-	    exit(0);
-	} else {
-	    printHelp();
-	    exit(0);
+		if (strcmp(argv[i], "-verbose") == 0)
+			verbose = true;
+		else if (strcmp(argv[i], "-version") == 0) {
+			printf("ush beta\n");
+			exit(0);
+		} else {
+			printHelp();
+			exit(0);
+		}
 	}
-    }
 }
 
 static void
 printHelp(void)
 {
-	printf("mysh\n\n");
+	printf("ush beta\n\n");
 	printf("Command line options:\n");
 	printf("\t-verbose\n");
 	printf("\t-help\n");
 	printf("\t-version\n\n");
 	printf("Builtin commands:\n");
-	printf("\tset [var = value]\n");
+	printf("\tset var = value\n");
 	printf("\tunset var\n");
-	printf("\tsetenv [var = value]\n");
+	printf("\tsetenv var = value\n");
 	printf("\tunsetenv var\n");
-	printf("\tcd [dirs]\n");
+	printf("\tcd dir\n");
 	printf("\thistory\n");
 	printf("\tverbose\n");
 	printf("\tnonverbose\n");
@@ -913,5 +912,5 @@ static void
 sigHandler(int sig)
 {
 	(void) sig;
-	siglongjmp(buf, 1);
+	siglongjmp(jmpbuf_gl, 1);
 }
