@@ -433,10 +433,9 @@ lookupPath(const char *progName)
 	struct dirent *dire = NULL;
 	size_t sz;
 
-	tok = strtok(env, ":");
-	while (tok) {
-		dirp = opendir(tok);
-		dire = readdir(dirp);
+	for (tok = strtok(env, ":"); tok; tok = strtok(NULL, ":")) {
+		if (!(dirp = opendir(tok)) || !(dire = readdir(dirp)))
+			continue;
 
 		while (dire) {
 			if (strcmp(progName, dire->d_name) == 0) {
@@ -448,8 +447,9 @@ lookupPath(const char *progName)
 			}
 			dire = readdir(dirp);
 		}
-		closedir(dirp);
-		tok = strtok(NULL, ":");
+
+		if (dirp)
+			closedir(dirp);
 	}
 	free(env);
 	return compName;
