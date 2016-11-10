@@ -89,11 +89,16 @@ dispatch(int argc, char *argv[]) {
 	if (flag & OP_DEL) {
 		if (argc < 2)
 			print_usage();
+		for (int i = 1; i < argc; i++)
+			delete_file(argv[0], argv[i]);
 		return;
 	}
 	if (flag & OP_ADD) {
 		if (argc < 2)
 			print_usage();
+		for (int i = 1; i < argc; i++)
+			replace_or_add(argv[0], argv[i]);
+		return;
 	}
 	if (flag & OP_EXT) {
 		if (argc < 1)
