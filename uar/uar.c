@@ -89,6 +89,7 @@ dispatch(int argc, char *argv[]) {
 	if (flag & OP_DEL) {
 		if (argc < 2)
 			print_usage();
+		return;
 	}
 	if (flag & OP_ADD) {
 		if (argc < 2)
@@ -97,10 +98,22 @@ dispatch(int argc, char *argv[]) {
 	if (flag & OP_EXT) {
 		if (argc < 1)
 			print_usage();
+		if (argc > 1)
+			for (int i = 1; i < argc; i++)
+				extract(argv[0], argv[i]);
+			else
+				extract(argv[0], NULL);
+		return;
 	}
 	if (flag & OP_TAB) {
 		if (argc < 1)
 			print_usage();
+		if (argc > 1)
+			for (int i = 1; i < argc; i++)
+				print_table(argv[0], argv[i]);
+		else
+			print_table(argv[0], NULL);
+		return;
 	}
 	if (flag & OP_CHK) {
 		if (argc < 1)
@@ -162,7 +175,7 @@ parse_archive(char *fname)
 	while ((fscanf(f, "%16s %12s %6s %6s %8s %10s %2s", header.fname, header.date,
 		    header.uid, header.gid, header.mode, header.fsize, 
 		    header.magic)) == 7) {	
-		fseek(f, strtoul(header.fsize, NULL, 10) + 1, SEEK_CUR);
+		fseek(f, strtol(header.fsize, NULL, 10) + 1, SEEK_CUR);
 		/* Take the "/" out of the file's name */
 		header.fname[strlen(header.fname) - 1] = '\0';
 		list_insert(header);
@@ -183,19 +196,21 @@ print_table(char *arch_name, char *fname)
 	check_archive(arch_name);
 	parse_archive(arch_name);
 
-	if (!fname)
-	while ( (node = list_next(node)) )
-	    printf("%s\n", node->header.fname);
-    else {
-	node = list_lookup(fname);
-	if (node)
-	    printf("%s\n", fname);
+	/* find a specific file in the archive */
+	if (fname) {
+		node = list_lookup(fname);
+		if (node)
+			printf("%s\n", fname);
+		else
+			printf("no entry %s found\n", fname);
+	}
+	/* print name of all files in the archive */
 	else
-	    printf("no entry %s found\n", fname);
-    }
+		while ((node = list_next(node)))
+			printf("%s\n", node->header.fname);
 }
 
-static int
+	static int
 extract_aux(char *ar_name, struct node *node)
 {
 	FILE *file;
@@ -212,7 +227,6 @@ extract_aux(char *ar_name, struct node *node)
 	offset = AR_MAGIC_SZ + node->seq * F_HDR_SZ + acc_size;
 
 	fseek(arch, offset, SEEK_SET);
-
 	filesz = strtoul(node->header.fsize, NULL, 10);
 
 	while (filesz--) {
@@ -227,12 +241,12 @@ extract_aux(char *ar_name, struct node *node)
 
 	utime(node->header.fname, &tbuff);
 	chmod(node->header.fname, (unsigned short) strtoul(node->header.mode,
-						       NULL, 8));
+				NULL, 8));
 
-    return 0;
+	return 0;
 }
 
-static int
+	static int
 extract(char *ar_name, char *file_name)
 {
 	struct node *ptr = NULL;
@@ -240,10 +254,11 @@ extract(char *ar_name, char *file_name)
 	check_archive(ar_name);
 	parse_archive(ar_name);
 
+	/* extract all */
 	if (!file_name)
-	while ((ptr = list_next(ptr)) != NULL)
-		extract_aux(ar_name, ptr);
-
+		while ((ptr = list_next(ptr)) != NULL)
+			extract_aux(ar_name, ptr);
+	/* extract file_name */
 	else {
 		if (!(ptr = list_lookup(file_name))) {
 			printf("%s: no entry %s found\n", getprogname(), file_name);
@@ -258,7 +273,7 @@ extract(char *ar_name, char *file_name)
 static int
 /* Add or replace a file into the archive. */
 replace_or_add(char *ar_name, char *file_name)
-{    
+{
 	FILE *file;
 	FILE *arch;
 	FILE *bkpfile;
@@ -301,8 +316,8 @@ replace_or_add(char *ar_name, char *file_name)
 	if ((ptr = list_lookup(file_name)) == NULL) {
 		fseek(arch, 0, SEEK_END);
 		fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr,
-			file_st.st_mtime, file_st.st_uid, file_st.st_gid,
-			file_st.st_mode, file_st.st_size, 0x60, 0x0A);
+				file_st.st_mtime, file_st.st_uid, file_st.st_gid,
+				file_st.st_mode, file_st.st_size, 0x60, 0x0A);
 
 		rewind(file);
 		while ((ch = getc(file)) != EOF)
@@ -344,8 +359,8 @@ replace_or_add(char *ar_name, char *file_name)
 		/* Seeking back to the file that's going to be replaced */
 		fseek(arch, offset, SEEK_SET);
 		fprintf(arch, "%-16s%-12ld%-6u%-6u%-8o%-10zu%c%c", tmpstr,
-			file_st.st_mtime, file_st.st_uid, file_st.st_gid,
-			file_st.st_mode, file_st.st_size, 0x60, 0x0A);
+				file_st.st_mtime, file_st.st_uid, file_st.st_gid,
+				file_st.st_mode, file_st.st_size, 0x60, 0x0A);
 
 		while ((ch = getc(file)) != EOF)
 			putc(ch, arch);
@@ -354,8 +369,8 @@ replace_or_add(char *ar_name, char *file_name)
 		   replaced is less than its previous size */
 		if (file_st.st_size < strtol(ptr->header.fsize, NULL, 10))
 			if ( (ftruncate(fileno(arch), ftell(arch))) == -1)
-			err(1, "%s: Could not complete the replace operation\n",
-				file_name);
+				err(1, "%s: Could not complete the replace operation\n",
+						file_name);
 
 		/* Write the backed up portion of the archive back to it */
 		rewind(bkpfile);
@@ -367,7 +382,7 @@ replace_or_add(char *ar_name, char *file_name)
 
 		/* We need to update the size of the file in the list of headers*/
 		snprintf(ptr->header.fsize, sizeof(ptr->header.fsize), "%lu",
-			 file_st.st_size);
+				file_st.st_size);
 
 		fclose(bkpfile);
 	}
@@ -378,7 +393,7 @@ replace_or_add(char *ar_name, char *file_name)
 	return 0;
 }
 
-static int
+	static int
 delete_file (char *ar_name, char *file_name)
 {
 	FILE *arch;
@@ -396,10 +411,10 @@ delete_file (char *ar_name, char *file_name)
 	check_archive(ar_name);
 	parse_archive(ar_name);
 
-	if ( !(arch = fopen(ar_name, "r+")) )
+	if (!(arch = fopen(ar_name, "r+")))
 		err(1, "%s: Could not open the archive\n", ar_name);
 
-	if ( !(ptr = list_lookup(file_name)) ) {
+	if (!(ptr = list_lookup(file_name))) {
 		printf("%s: no entry %s found\n", getprogname(), file_name);
 		exit(0);
 	}
@@ -424,7 +439,7 @@ delete_file (char *ar_name, char *file_name)
 
 		if ((ftruncate(fileno(arch), ftell(arch))) == -1)
 			err(1, "%s: Could not complete deletion of file\n",
-				file_name);
+					file_name);
 
 		free(bkpbuff);
 	}
