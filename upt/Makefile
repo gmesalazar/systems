@@ -1,4 +1,3 @@
-CC      := gcc
 FLAGS   := -Wall -Wextra -g -O2
 MAIN    := upt
 

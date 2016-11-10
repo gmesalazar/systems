@@ -1,5 +1,5 @@
 #include <dirent.h>
-#include <error.h>
+#include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,30 +20,27 @@ int main(int argc, char **argv)
 static void
 traverse(char *name, int n) 
 {
-    DIR *dir;
-    struct dirent *ent;
+	DIR *dir;
+	struct dirent *ent;
 
 	chdir(name);
 
-    if (!(dir = opendir(".")))
-		error(1, 0, "could not open current dir\n");
+	if (!(dir = opendir(".")))
+		err(1, 0, "could not open current dir\n");
 
 	for(;;) {
 		int i;
-
 		if (!(ent = readdir(dir)))
 			break;
 		if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
 			continue;
-
 		for (i = 0; i < n; i++)
-			printf("\t");
-
+			printf("|    ");
 		if (ent->d_type == DT_DIR) {
-			printf("| d: %s\n", ent->d_name);
+			printf("|--- %s\n", ent->d_name);
 			traverse(ent->d_name, n + 1);
 		} else if (ent->d_type == DT_REG) {
-			printf("| f: %s\n", ent->d_name);
+			printf("|--- %s\n", ent->d_name);
 		}
 	}
 
@@ -51,5 +48,3 @@ traverse(char *name, int n)
 		chdir("../");
 	closedir(dir);
 }
-
-

@@ -1,4 +1,4 @@
-CC      := gcc
+CC      := cc
 
 FLAGS   := -Wall -Wextra -g -O2
 
@@ -8,7 +8,7 @@ LIST    := list
 all: $(MAIN)
 
 $(MAIN): $(LIST).o $(MAIN).o
-	$(CC) $(FLAGS) $^ -lbsd -o $@
+	$(CC) $(FLAGS) $(.ALLSRC) -o $@
 
 $(MAIN).o: $(MAIN).c
 	$(CC) $(FLAGS) -c $<

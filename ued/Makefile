@@ -1,4 +1,3 @@
-CC        := gcc
 CFLAGS    := -Wall -Wextra -I../lib
 
 MAIN      := ued
@@ -7,7 +6,7 @@ UTIL      := util
 all:        $(MAIN)
 
 $(MAIN):    $(MAIN).o $(UTIL).o
-	        $(CC) $(CFLAGS) -o $@ $^
+	        $(CC) $(CFLAGS) $(.ALLSRC) -o $@
 
 $(MAIN).o:  $(MAIN).c
 	        $(CC) $(CFLAGS) -c $<

@@ -4,6 +4,7 @@
        - Improve options processing (using getopt?)
  */
 
+#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -15,8 +16,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <utime.h>
-#include <bsd/stdlib.h>
-#include <bsd/string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -24,125 +23,126 @@
 #include "include/uar.h"
 
 
-/* Static declarations -- Main operations */
+/* Main operations */
 static int extract(char *ar_name, char *file_name);
 static void print_table(char *arch_name, char *fname);
 static int replace_or_add(char *ar_name, char *file_name);
 static int delete_file(char *ar_name, char *file_name);
 
-/* Static declarations -- Helper functions*/
-static void print_err (char *fmt, ...);
+/* Helper functions*/
 static void print_usage (void);
-static char get_op (int argc, char **argv);
-static void check_archive (char *fname, bool ck_exist);
-static int parse_archive(char *fname);
-static uint32_t get_acc_size (uint32_t upto);
+static char get_op (int, char**);
+static void check_archive (char*);
+static int parse_archive(char*);
+static uint32_t get_acc_size (uint32_t);
+static void dispatch(int, char*[]);
+
+enum {
+	OP_DEL = 0x01,
+	OP_ADD = 0x02,
+	OP_EXT = 0x04,
+	OP_TAB = 0x08,
+	OP_CHK = 0x10
+};
+
+static int flag = 0;
 
 int
 main(int argc, char **argv)
 {
-	char *arch_name;
-	char op;
+	int ch = 0;
 
 	setprogname(argv[0]);
-	arch_name = argv[2];
 
-	op = get_op(argc, argv);
-
-	switch (op) {
-		int i;
-		case 'd':
-		for (i = 3; i < argc; i++)
-			delete_file (arch_name, argv[i]);
-		break;
-		case 'r':
-		for (i = 3; i < argc; i++)
-			replace_or_add(arch_name, argv[i]);
-		break;
-		case 'x':
-		if (argc > 3)
-			for (i = 3; i < argc; i++)
-			extract(arch_name, argv[i]);
-		else
-			extract(arch_name, NULL);
-		break;
-		case 't':
-		if (argc > 3)
-			for (i = 3; i < argc; i++)
-			print_table(arch_name, argv[i]);
-		else
-			print_table(arch_name, NULL);
-		break;
-		default:
-		print_usage();
-		return(1);
+	while((ch = getopt(argc, argv, "drxtc")) != -1) {
+		switch (ch) {
+			case 'd':
+				flag |= OP_DEL;
+				break;
+			case 'r':
+				flag |= OP_ADD;
+				break;
+			case 'x':
+				flag |= OP_EXT;
+				break;
+			case 't':
+				flag |= OP_TAB;
+				break;
+			case 'c':
+				flag |= OP_CHK;
+				break;
+			case '?':
+				print_usage();
+		}
 	}
+
+	argc -= optind;
+	argv += optind;
+
+	dispatch(argc, argv);
 
 	return 0;
 }
 
-static void 
-print_err(char *fmt, ...) 
-{
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-	list_free();
-	exit(1);
+static void
+dispatch(int argc, char *argv[]) {
+	if (flag & OP_DEL) {
+		if (argc < 2)
+			print_usage();
+	}
+	if (flag & OP_ADD) {
+		if (argc < 2)
+			print_usage();
+	}
+	if (flag & OP_EXT) {
+		if (argc < 1)
+			print_usage();
+	}
+	if (flag & OP_TAB) {
+		if (argc < 1)
+			print_usage();
+	}
+	if (flag & OP_CHK) {
+		if (argc < 1)
+			print_usage();
+		check_archive(argv[0]);
+	}
 }
 
 static void 
 print_usage() 
 {
-	printf(" Usage: %s [command] archive-file file(s)\n", getprogname());
-	printf("\n commands:\n");
-	printf("\td\t- delete file(s) from the archive\n");
-	printf("\tr\t- replace or insert new file(s) into the archive\n");
-	printf("\tx\t- extrat file(s) from the archive\n");
-	printf("\tt\t- display contents of the archive\n");
-}
-
-static char
-/* Handle invalid inputs and return the option argument */
-get_op (int argc, char **argv) 
-{
-	char *op = argv[1];
-
-	if (argc < 3) {
-		print_usage();
-		exit(1);
-	}
-	else if ( (argc == 3) && (op[0] == 'd') ) {
-		print_usage();
-		exit(1);
-	}
-
-	return op[0];
+	fprintf(stderr, "Usage: %s [command] archive-file [files]\n", getprogname());
+	fprintf(stderr, "\n commands:\n");
+	fprintf(stderr, "\t-d\t- delete files\n");
+	fprintf(stderr, "\t-r\t- replace or insert new files\n");
+	fprintf(stderr, "\t-x\t- extrat files from the archive; defaults to all\n");
+	fprintf(stderr, "\t-t\t- display contents of the archive\n");
+	fprintf(stderr, "\t-c\t- check the archive exists and has the magic\n");
+	exit(1);
 }
 
 static void 
 /* Make sure the archive exists and begins with the proper magic string */
-check_archive(char *ar_name, bool err_noexist)
+check_archive(char *ar_name)
 {
 	int fd;
 	char str[AR_MAGIC_SZ + 1];
 
 	if ((fd = open(ar_name, O_RDONLY)) == -1)
-		if (err_noexist)
-			goto error;
+		goto error;
 
-	if (read(fd, str, AR_MAGIC_SZ + 1) == -1)
+	if (read(fd, str, AR_MAGIC_SZ) == -1)
 		goto close;
 
 	if (strcmp(str, "!<arch>\n") != 0)
-		print_err("%s: %s: File format not recognized\n",  getprogname(),
-			ar_name);
+		err(1, 0, "%s: %s: File format not recognized\n");
 
 close:
 	close(fd);
+	return;
 error:
-	print_err("%s: error code %d (%s)\n", getprogname, errno, strerror(errno));
+	err(errno, NULL);
 	return;
 }
 
@@ -180,7 +180,7 @@ print_table(char *arch_name, char *fname)
 {
 	struct node *node = NULL;
 
-	check_archive(arch_name, true);
+	check_archive(arch_name);
 	parse_archive(arch_name);
 
 	if (!fname)
@@ -237,7 +237,7 @@ extract(char *ar_name, char *file_name)
 {
 	struct node *ptr = NULL;
 
-	check_archive(ar_name, true);
+	check_archive(ar_name);
 	parse_archive(ar_name);
 
 	if (!file_name)
@@ -283,8 +283,7 @@ replace_or_add(char *ar_name, char *file_name)
 	strlcat(tmpstr, "/", FNAME_SZ + 1);
 
 	if (!(file = fopen(file_name, "r")))
-		print_err("%s: %s: No such file or directory\n", getprogname(),
-		  file_name);
+		err(1, "%s: No such file or directory\n", file_name);
 
 	if ( !(arch = fopen(ar_name, "r+")) ) {
 		printf("%s: creating %s\n", getprogname(), ar_name);
@@ -293,7 +292,7 @@ replace_or_add(char *ar_name, char *file_name)
 		fflush(arch);
 	}
 
-	check_archive(ar_name, false);
+	check_archive(ar_name);
 	parse_archive(ar_name);
 
 	fstat(fileno(file), &file_st);
@@ -334,7 +333,7 @@ replace_or_add(char *ar_name, char *file_name)
 		bkpbuff_sz = arch_st.st_size - ftell(arch);
 
 		if ( !(bkpfile = tmpfile()) )
-			print_err("%s: Could not create a temp file; aborting\n");
+			err(1, "Could not create a temp file; aborting\n");
 
 		aux = bkpbuff_sz;
 		while (aux--) {
@@ -355,8 +354,8 @@ replace_or_add(char *ar_name, char *file_name)
 		   replaced is less than its previous size */
 		if (file_st.st_size < strtol(ptr->header.fsize, NULL, 10))
 			if ( (ftruncate(fileno(arch), ftell(arch))) == -1)
-			print_err("%s: %s: Could not complete the replace operation\n",
-				  getprogname(), file_name);
+			err(1, "%s: Could not complete the replace operation\n",
+				file_name);
 
 		/* Write the backed up portion of the archive back to it */
 		rewind(bkpfile);
@@ -394,12 +393,11 @@ delete_file (char *ar_name, char *file_name)
 	struct node *ptr;
 	struct stat arch_st;
 
-	check_archive(ar_name, true);
+	check_archive(ar_name);
 	parse_archive(ar_name);
 
 	if ( !(arch = fopen(ar_name, "r+")) )
-		print_err("%s: %s: Could not open the archive\n", getprogname(),
-		  ar_name);
+		err(1, "%s: Could not open the archive\n", ar_name);
 
 	if ( !(ptr = list_lookup(file_name)) ) {
 		printf("%s: no entry %s found\n", getprogname(), file_name);
@@ -419,14 +417,14 @@ delete_file (char *ar_name, char *file_name)
 		bkpbuff = (char*) calloc(bkpbuff_sz + 1, sizeof(char));
 
 		if ((fread(bkpbuff, sizeof(char), bkpbuff_sz, arch)) != bkpbuff_sz)
-			print_err("%s: %s: Could not delete file\n", getprogname(), file_name);
+			err(1, "%s: Could not delete file\n", file_name);
 
 		fseek(arch, offset_header, SEEK_SET);
 		fwrite(bkpbuff, sizeof(char), bkpbuff_sz, arch);
 
 		if ((ftruncate(fileno(arch), ftell(arch))) == -1)
-			print_err("%s: %s: Could not complete deletion of file\n",
-				  getprogname(), file_name);
+			err(1, "%s: Could not complete deletion of file\n",
+				file_name);
 
 		free(bkpbuff);
 	}
