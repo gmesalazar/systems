@@ -24,10 +24,10 @@
 
 
 /* Main operations */
-static int extract(char *ar_name, char *file_name);
-static void print_table(char *arch_name, char *fname);
-static int replace_or_add(char *ar_name, char *file_name);
-static int delete_file(char *ar_name, char *file_name);
+static int extract(char*, char*);
+static void print_table(char*, char*);
+static int replace_or_add(char*, char*);
+static int delete_file(char*, char*);
 
 /* Helper functions*/
 static void print_usage (void);
