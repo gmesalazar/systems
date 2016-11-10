@@ -1,71 +1,74 @@
+#include <ctype.h>
+#include <dirent.h>
 #include <err.h>
+#include <errno.h>
+#include <editline/readline.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <ctype.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <errno.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
-#include <fcntl.h>
 #include <setjmp.h>
+#include <unistd.h>
+
 
 #include "include/ush.h"
 #include "include/list.h"
 #include "util.h"
 
 enum redir_op {
-	REDIR_NO  = 0x0,
-	REDIR_IN  = 0x1,
-	REDIR_OUT = 0x2,
-	REDIR_ERR = 0x4,
+	REDIR_NO  = 0x1,
+	REDIR_IN  = 0x2,
+	REDIR_OUT = 0x4,
+	REDIR_ERR = 0x8,
 };
 
 /* prototypes */
-static int prompt(FILE *fp);
-static int unset(char *varName);
-static int histSubst(struct_t **words);
-static int varExpansion(struct_t **words);
-static int filenameCompl(struct_t *words);
-static int getSetArgs(struct_t *words, char **varName, char **varValue);
-static int execWrapper(struct_t *words);
-static int execWithPipes(struct_t *words);
-static int execCommand(struct_t *words);
-static int execExec(struct_t *words);
-static int handleRedir(char **argv);
-static char* handleRedirOperator(char **argv, enum redir_op *);
-static char* lookupPath(const char *bin);
-static char **buildArgv(struct_t *words);
-static struct_t *buildWordsList(char *str);
-static struct_t *lookupTable(const char *varName);
-static struct_t *set(char *varName, char *varValue);
-static void commLineOptions(int argc, char **argv);
-static void printCommand(struct_t *words);
+static int prompt(FILE *);
+static int unset(char *);
+static int histSubst(struct_t**);
+static int varExpansion(struct_t**);
+static int getSetArgs(struct_t*, char**, char**);
+static int execWrapper(struct_t*);
+static int execWithPipes(struct_t*);
+static int execCommand(struct_t*);
+static int execExec(struct_t*);
+static int handleRedir(char**);
+static char*  handleRedirOperator(char**, enum redir_op*);
+static char*  lookupPath(const char*);
+static char** buildArgv(struct_t*);
+static struct_t* buildWordsList(char*);
+static struct_t* lookupTable(const char*);
+static struct_t* set(const char*, const char*);
+static void commLineOptions(int, char**);
+static void printCommand(struct_t*);
+static void runSubsts(struct_t**);
 static void setHandlers(void);
-static void sigHandler(int sig);
+static void sigHandler(int);
 static void printHelp(void);
-/* /prototypes */
+static void setPrompt(void);
+/* prototypes */
 
 /* globals */
 static unsigned int histSizeGl = 0;
-static struct_t *varTableGl = NULL;
-static struct_t *historyGl = NULL;
+static struct_t* varTableGl = NULL;
+static struct_t* historyGl = NULL;
 static bool verbose = false;
 static sigjmp_buf jmpbuf_gl;
+static char* prompt_Gl = " $ ";
 /* /globals */
 
 
 /* ush main*/
-int
-main(int argc, char **argv)
+int main(int argc, char* argv[])
 {
-	char *home;
-	char *rcfname;
-	FILE *stream;
 	size_t sz;
+	char* home;
+	char* rcname;
+	FILE* stream;
 
 	commLineOptions(argc, argv);
 	setHandlers();
@@ -74,110 +77,69 @@ main(int argc, char **argv)
 		err(1, 0, "Could not retrieve HOME environment variable\n");
 
 	sz = strlen(home) + strlen("/") + strlen(RC_FILE_NAME) + 1;
-	rcfname = calloc(sz, sizeof(char));
+	rcname = calloc(sz, sizeof(char));
 
-	strlcat(rcfname, home, sz);
-	strlcat(rcfname, "/", sz);
-	strlcat(rcfname, RC_FILE_NAME, sz);
+	strlcat(rcname, home, sz);
+	strlcat(rcname, "/", sz);
+	strlcat(rcname, RC_FILE_NAME, sz);
 
-	if ((stream = fopen(rcfname, "r")) != NULL) {
+	if ((stream = fopen(rcname, "r")) != NULL) {
 		prompt(stream);
 		fclose(stream);
-		free(rcfname);
+		free(rcname);
 	}
 
 	prompt(stdin);
+
+	deallocStruct(&varTableGl);
+	deallocStruct(&historyGl);
+
 	return 0;
 }
+
 /* ush main */
-
-static int
-prompt(FILE *fp)
+int
+prompt(FILE* fp)
 {
-	struct_t *words;
 	int status;
-	size_t iniSize = 100;
-	ssize_t nread;
-	char *str = NULL;
-	char *prmpt = "$";
+	char* line = NULL;
+	struct_t* words = NULL;
 
-	struct_t *ps1;
+	// unused for now
+	(void)fp;
 
-	while (true) {
-		if (fp != stdin && feof(fp))
-			break;
-		if (sigsetjmp(jmpbuf_gl, 1)) {
-			free(str);
-			deallocStruct(&words);
-			printf("\n");
-		}
-		ps1 = lookupTable("PS1");
-		if (fp == stdin && ps1)
-			prmpt = ps1->tableData.varValue;
-		if (fp == stdin && !ps1)
-			ps1 = set("PS1", prmpt);
-		if (fp == stdin) {
-			printf(" %s ", prmpt);
-			fflush(stdout);
-		}
-		str = (char *) calloc(iniSize + 1, sizeof(char));
-		if (str == NULL)
-			err(1, 0, "Could not allocate string of size %zu bytes\n", iniSize + 1);
-		nread = getline (&str, &iniSize, fp);
-		if (nread == -1) {
-			free(str);
-			continue;
-		}
-		if (str[nread - 1] == '\n')
-			str[nread - 1] = '\0';
-		words = buildWordsList(str);
-		if (!words) {
-			free(str);
-			deallocStruct(&words);
-			continue;
-		}
-		histSubst(&words);
-		if (verbose)
-			printCommand(words);
-		varExpansion(&words);
-		if (verbose)
-			printCommand(words);
-		
-		if (filenameCompl(words) == 0) {
-			free(str);
-			deallocStruct(&words);
-			continue;
-		}
-		if (strcmp(words->wordData.word, "exit") == 0) {
-			free(str);
-			deallocStruct(&words);
-			break;
-		}
+	while(true) {
+		setPrompt();
+		if (sigsetjmp(jmpbuf_gl, 1))
+			goto clean;
+		if (!(line = readline(prompt_Gl)))
+			goto clean;
+		if (strlen(line) == 0)
+			goto clean;
+		else
+			add_history(line);
+		words = buildWordsList(line);
+		runSubsts(&words);
 		status = execCommand(words);
-		if (fp == stdin)
-			printf("%d\n", status);
-		free(str);
+clean:
+		free(line);
 		deallocStruct(&words);
-	}
-	if (fp == stdin) {
-		deallocStruct(&varTableGl);
-		deallocStruct(&historyGl);
 	}
 	return 0;
 }
 
 static char**
-buildArgv(struct_t *words) 
+buildArgv(struct_t* words)
 {
-	struct_t *aux = NULL;
-	char **argv = NULL;
+	struct_t* aux = NULL;
+	char** argv = NULL;
 	size_t sz, i;
 
 	if (!words)
 		return NULL;
 
 	for(aux = words, sz = 0; aux; aux = aux->next, sz++);
-	if ((argv = (char**) calloc(sz + 1, sizeof(char*))) == NULL)
+	if ((argv = calloc(sz + 1, sizeof(char*))) == NULL)
 		return NULL;
 	for (i = 0, aux = words; i < sz; i++, aux = aux->next)
 		argv[i] = aux->wordData.word;
@@ -254,7 +216,7 @@ execCommand(struct_t *words)
 		unsetenv(words->next->wordData.word);
 	}
 	else if ((strcmp(aux->wordData.word, "cd") == 0) && aux->next &&
-		 (strcmp(aux->next->wordData.word, "-") == 0)) {
+			(strcmp(aux->next->wordData.word, "-") == 0)) {
 		if (strlen(lastDir) == 0) {
 			fprintf(stderr, "cd: Last dir variable not set\n");
 			return -1;
@@ -276,12 +238,12 @@ execCommand(struct_t *words)
 
 		if (!aux->next) {
 			if (!(home = getenv("HOME"))) {
-			fprintf(stderr, "%s\n", strerror(errno));
-			return -1;
+				fprintf(stderr, "%s\n", strerror(errno));
+				return -1;
 			}
 			if (chdir(home) == -1) {
-			fprintf(stderr, "%s\n", strerror(errno));
-			return -1;
+				fprintf(stderr, "%s\n", strerror(errno));
+				return -1;
 			}
 		}
 		else if (chdir(aux->next->wordData.word) == -1) {
@@ -289,6 +251,8 @@ execCommand(struct_t *words)
 			return -1;
 		}
 	}
+	else if (strcmp(aux->wordData.word, "exit") == 0)
+		exit(0);
 	else if (strcmp(aux->wordData.word, "history") == 0)
 		printStruct(historyGl);
 	else if (strcmp(aux->wordData.word, "verbose") == 0)
@@ -297,7 +261,7 @@ execCommand(struct_t *words)
 		verbose = false;
 	else
 		return execWrapper(words);
-    return 0;
+	return 0;
 }
 
 static int
@@ -400,7 +364,7 @@ execExec(struct_t *words)
 		goto clean;
 	}
 
-	if ( (pid = fork()) == -1) {
+	if ((pid = fork()) == -1) {
 		fprintf(stderr, "Could not fork\n");
 		goto clean;
 	}
@@ -442,11 +406,11 @@ lookupPath(const char *progName)
 
 		while (dire) {
 			if (strcmp(progName, dire->d_name) == 0) {
-			sz = strlen(tok) + 1 + strlen(progName) + 1;
-			compName = (char*) calloc(sz + 1, sizeof(char));
-			strlcat(compName, tok, sz);
-			strlcat(compName, "/", sz);
-			strlcat(compName, progName, sz);
+				sz = strlen(tok) + 1 + strlen(progName) + 1;
+				compName = (char*) calloc(sz + 1, sizeof(char));
+				strlcat(compName, tok, sz);
+				strlcat(compName, "/", sz);
+				strlcat(compName, progName, sz);
 			}
 			dire = readdir(dirp);
 		}
@@ -463,20 +427,20 @@ handleRedir(char **argv)
 {
 	int fd;
 	char *filename;
-	enum redir_op redir_op;
+	enum redir_op redir;
 
-	filename = handleRedirOperator(argv, &redir_op);
+	filename = handleRedirOperator(argv, &redir);
 
-	if (redir_op & REDIR_IN) {
+	if (redir & REDIR_IN) {
 		if ((fd = open(filename, O_RDONLY)) == -1)
 			goto error;
-		dup2(fd, 0);
-	} else if (redir_op & (REDIR_OUT | REDIR_ERR)) {
+		dup2(fd, STDIN_FILENO);
+	} else if (redir & (REDIR_OUT | REDIR_ERR)) {
 		if ((fd = open(filename, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR)) == -1)
 			goto error;
-		dup2(fd, 1);
-		if (redir_op & REDIR_ERR)
-			dup2(fd, 2);
+		dup2(fd, STDOUT_FILENO);
+		if (redir & REDIR_ERR)
+			dup2(fd, STDERR_FILENO);
 	}
 
 	return 0;
@@ -485,7 +449,7 @@ error:
 	return -1;
 }
 
-static char*
+	static char*
 handleRedirOperator(char **argv, enum redir_op *redir_op)
 {
 	char **aux;
@@ -498,22 +462,47 @@ handleRedirOperator(char **argv, enum redir_op *redir_op)
 		if (**aux == '<') {
 			*redir_op = REDIR_IN;
 			filename = strdup(*(aux + 1));
+			*aux = NULL;
 			break;
 		}
 		if (**aux == '>') {
 			*redir_op = REDIR_OUT;
 			filename = strdup(*(aux + 1));
+			*aux = NULL;
 			break;
 		}
 		if (**aux == '&' && *(*aux + 1) == '>') {
 			*redir_op = REDIR_ERR;
 			filename = strdup(*(aux + 1));
+			*aux = NULL;
 			break;
 		}
 	}
 
 	return filename;
 }
+
+void
+setPrompt(void)
+{
+	struct_t* ps1;
+	if ((ps1 = lookupTable("PS1")))
+		prompt_Gl = ps1->tableData.varValue;
+}
+
+void
+runSubsts(struct_t **words) {
+	// perform history substitution
+	histSubst(words);
+	if (verbose)
+		printCommand(*words);
+
+	// perform variable expansion
+	varExpansion(words);
+	if (verbose)
+		printCommand(*words);
+}
+
 
 static struct_t *
 buildWordsList(char *str) 
@@ -565,7 +554,7 @@ histSubst(struct_t **words)
 			struct_t *lastCom = cloneList(historyGl->histData.command);
 			struct_t *newStart = insertListIntoPos(lastCom, aux);
 			if (!aux->prev)
-			*words = newStart;
+				*words = newStart;
 			free(aux->wordData.word);
 			free(aux);
 			aux = newStart;
@@ -576,7 +565,7 @@ histSubst(struct_t **words)
 			struct_t *newStart = NULL;
 
 			while (lastWord->next)
-			lastWord = lastWord->next;
+				lastWord = lastWord->next;
 
 			lastWord = cloneNode(lastWord);
 			newStart = insertListIntoPos(lastWord, aux);
@@ -618,7 +607,7 @@ histSubst(struct_t **words)
 				naux = historyGl;
 				while (naux) {
 					if (strstr(naux->histData.command->wordData.word, str))
-					match = cloneList(naux->histData.command);
+						match = cloneList(naux->histData.command);
 					naux = naux->next;
 				}
 				newStart = insertListIntoPos(match, aux);
@@ -664,28 +653,28 @@ varExpansion(struct_t **words)
 			break;
 
 		if ( (ptr1 = strstr(aux->wordData.word, "$(")) &&
-			 (ptr2 = strstr(aux->wordData.word, ")")) ) {
+				(ptr2 = strstr(aux->wordData.word, ")")) ) {
 			sz = ptr2 - (ptr1 + 2) + 1;
 			if (sz == 0)
-			return -1;
+				return -1;
 			varName = (char*) calloc(sz, sizeof(char));
 			strlcpy(varName, aux->wordData.word + 2, sz);
 
 		} else if ( (ptr1 = strstr(aux->wordData.word, "$")) ) {
 			sz = strlen(aux->wordData.word + 1) + 1;
 			if (sz == 1)
-			return -1;
+				return -1;
 			varName = (char*) calloc(sz, sizeof(char));
 			strlcpy(varName, aux->wordData.word + 1, sz);
 		}
 
 		if (varName) {
 			if ( (var = lookupTable(varName)) ) {
-			free(aux->wordData.word);
-			aux->wordData.word = strdup(var->tableData.varValue);
+				free(aux->wordData.word);
+				aux->wordData.word = strdup(var->tableData.varValue);
 			} else {
-			free(aux->wordData.word);
-			aux->wordData.word = strdup("");
+				free(aux->wordData.word);
+				aux->wordData.word = strdup("");
 			}
 			free(varName);
 		}
@@ -695,88 +684,8 @@ varExpansion(struct_t **words)
 	return 0;
 }
 
-static int
-filenameCompl(struct_t *words) 
-{
-	struct_t *aux = NULL;
-	char *compname = NULL;
-	char *path = NULL;
-	char *filename = NULL;
-	size_t strSz;
-	int pathStrSz;
-
-	DIR *dirp = NULL;
-	struct dirent *dire;
-
-	if (!words)
-		return -1;
-
-	aux = words;
-	while (aux->next)
-		aux = aux->next;
-	compname = aux->wordData.word;
-
-	strSz = strlen(compname);
-
-	if (!words->next) {
-		if (compname[strSz - 1] == '\t')
-			compname[strSz - 1] = '\0';
-		return -1;
-	}
-
-	if (compname[strSz - 1] != '\t')
-		return -1;
-
-	compname[strSz - 1] = '\0';
-
-	if (strstr(compname, "/")) {
-
-		pathStrSz = strlen(compname);
-		while (pathStrSz > 0) {
-			if (compname[pathStrSz - 1] == '/')
-				break;
-			--pathStrSz;
-		}
-
-		path = (char*) calloc(pathStrSz, sizeof(char));
-		strSz = strlen(compname) - pathStrSz + 1;
-		filename = (char*) calloc(strSz, sizeof(char));
-
-		strlcpy(path, compname, pathStrSz);
-		strlcpy(filename, compname + pathStrSz, strSz);
-
-		dirp = opendir(path);
-	}
-	else {
-		dirp = opendir(".");
-		filename = strdup(compname);
-	}
-
-	if (!dirp) {
-		free(path);
-		free(filename);
-		return -1;
-	}
-
-	dire = readdir(dirp);
-	while (dire) {
-		if (startsWith(dire->d_name, filename) || (strSz == 1)) {
-			if (strcmp(dire->d_name, ".") != 0 &&
-					strcmp(dire->d_name, "..") != 0)
-				printf(" %s\n", dire->d_name);
-		}
-		dire = readdir(dirp);
-	}
-
-	free(filename);
-	free(path);
-	closedir(dirp);
-
-	return 0;
-}
-
 static struct_t *
-set(char *varName, char *varValue) 
+set(const char *varName, const char *varValue)
 {
 	struct_t *aux = NULL;
 	struct_t *new = NULL;
@@ -866,7 +775,7 @@ commLineOptions(int argc, char **argv)
 		if (strcmp(argv[i], "-verbose") == 0)
 			verbose = true;
 		else if (strcmp(argv[i], "-version") == 0) {
-			printf("ush beta\n");
+			printf("ush 0.1\n");
 			exit(0);
 		} else {
 			printHelp();
@@ -875,7 +784,7 @@ commLineOptions(int argc, char **argv)
 	}
 }
 
-static void
+	static void
 printHelp(void)
 {
 	printf("ush beta\n\n");
@@ -894,7 +803,7 @@ printHelp(void)
 	printf("\tnonverbose\n");
 }
 
-static void
+	static void
 setHandlers(void)
 {
 	struct sigaction new;
@@ -908,7 +817,7 @@ setHandlers(void)
 	sigaction(SIGTSTP, &new, NULL);
 }
 
-static void
+	static void
 sigHandler(int sig)
 {
 	(void) sig;
