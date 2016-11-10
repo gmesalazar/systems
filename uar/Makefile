@@ -9,6 +9,7 @@ all: $(MAIN)
 
 $(MAIN): $(LIST).o $(MAIN).o
 	$(CC) $(FLAGS) $(.ALLSRC) -o $@
+	rm *.o
 
 $(MAIN).o: $(MAIN).c
 	$(CC) $(FLAGS) -c $<
