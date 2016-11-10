@@ -768,18 +768,18 @@ printCommand(struct_t *words)
 }
 
 static void
-commLineOptions(int argc, char **argv) 
+commLineOptions(int argc, char **argv)
 {
-	int i;
-	for (i = 1; i < argc; i++) {
-		if (strcmp(argv[i], "-verbose") == 0)
-			verbose = true;
-		else if (strcmp(argv[i], "-version") == 0) {
-			printf("ush 0.1\n");
-			exit(0);
-		} else {
-			printHelp();
-			exit(0);
+	int ch;
+	while((ch = getopt(argc, argv, "vh")) != -1) {
+		switch(ch) {
+			case 'v':
+				verbose = true;
+				break;
+			case 'h':
+				printHelp();
+				exit(0);
+				break;
 		}
 	}
 }
@@ -787,11 +787,10 @@ commLineOptions(int argc, char **argv)
 	static void
 printHelp(void)
 {
-	printf("ush beta\n\n");
+	printf("\tush beta\n\n");
 	printf("Command line options:\n");
-	printf("\t-verbose\n");
-	printf("\t-help\n");
-	printf("\t-version\n\n");
+	printf("\t-v enable verbose output\n");
+	printf("\t-h print help info\n");
 	printf("Builtin commands:\n");
 	printf("\tset var = value\n");
 	printf("\tunset var\n");
