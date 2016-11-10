@@ -12,7 +12,7 @@ list_insert(struct header info)
 {
 	struct node *new;
 
-	if ((new = calloc(1, sizeof(new))) == NULL)
+	if ((new = calloc(1, sizeof(struct node))) == NULL)
 		return 0;
 
 	new->header = info;
