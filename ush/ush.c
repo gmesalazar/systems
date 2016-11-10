@@ -1,3 +1,9 @@
+/*
+ * List of TODO's
+ *  - Ditch words list and work with a plain array of words?
+ *  - Use editline history instead of my own?
+ */
+
 #include <ctype.h>
 #include <dirent.h>
 #include <err.h>
@@ -13,7 +19,6 @@
 #include <sys/param.h>
 #include <setjmp.h>
 #include <unistd.h>
-
 
 #include "include/ush.h"
 #include "include/list.h"
@@ -70,12 +75,16 @@ int main(int argc, char* argv[])
 	char* rcname;
 	FILE* stream;
 
+	// parse command line options
 	commLineOptions(argc, argv);
+	// set signal handlers
 	setHandlers();
 
 	if (!(home = getenv("HOME")))
 		err(1, 0, "Could not retrieve HOME environment variable\n");
 
+	// TODO save home into a global for later use
+	// TODO factor this out
 	sz = strlen(home) + strlen("/") + strlen(RC_FILE_NAME) + 1;
 	rcname = calloc(sz, sizeof(char));
 
@@ -98,14 +107,15 @@ int main(int argc, char* argv[])
 }
 
 /* ush main */
-int
+static int
 prompt(FILE* fp)
 {
 	int status;
 	char* line = NULL;
 	struct_t* words = NULL;
 
-	// unused for now
+	// TODO unused for now
+	// need to test config file loading
 	(void)fp;
 
 	while(true) {
@@ -118,10 +128,19 @@ prompt(FILE* fp)
 			goto clean;
 		else
 			add_history(line);
+
+		// build a list of 'words' containing commands
+		// and arguments
 		words = buildWordsList(line);
+
+		// perform several substitutions on the word
+		// list
 		runSubsts(&words);
+
+		// on to execution...
 		status = execCommand(words);
 clean:
+		// if something goes wrong, clear this iteration and continue
 		free(line);
 		deallocStruct(&words);
 	}
@@ -149,8 +168,12 @@ buildArgv(struct_t* words)
 }
 
 static int
-getSetArgs(struct_t *words, char **varName, char **varValue) 
-{    
+/*
+ * get arguments to the 'set' command -- variable nam
+ * and value
+ */
+getSetArgs(struct_t *words, char **varName, char **varValue)
+{
 	struct_t *aux = words->next;
 	char *eq = NULL;
 
@@ -184,7 +207,11 @@ getSetArgs(struct_t *words, char **varName, char **varValue)
 }
 
 static int
-execCommand(struct_t *words) 
+/*
+ * Check if the command is a builtin; if so, execute.
+ * Otherwise, call execWrapper to handle pipes and exec
+ */
+execCommand(struct_t *words)
 {
 	char *varName  = NULL;
 	char *varValue = NULL;
@@ -201,6 +228,10 @@ execCommand(struct_t *words)
 			return -1;
 		unset(words->next->wordData.word);
 	}
+	/*
+	 * export an environment variable
+	 * TODO: factor this out to a function
+	 */
 	else if (strcmp(aux->wordData.word, "setenv") == 0) {
 		char **env;
 		if (getSetArgs(words, &varName, &varValue) == 0) {
@@ -215,6 +246,10 @@ execCommand(struct_t *words)
 			return -1;
 		unsetenv(words->next->wordData.word);
 	}
+	/*
+	 * execute `cd dir`
+	 * TODO: factor this out to a function
+	 */
 	else if ((strcmp(aux->wordData.word, "cd") == 0) && aux->next &&
 			(strcmp(aux->next->wordData.word, "-") == 0)) {
 		if (strlen(lastDir) == 0) {
@@ -232,6 +267,9 @@ execCommand(struct_t *words)
 			strlcpy(lastDir, temp, MAXPATHLEN);
 		}
 	}
+	/* execute `cd`
+	 * TODO: factor this out to a function
+	 */
 	else if (strcmp(aux->wordData.word, "cd") == 0) {
 		const char *home = NULL;
 		getcwd(lastDir, sizeof(lastDir));
@@ -265,7 +303,7 @@ execCommand(struct_t *words)
 }
 
 static int
-execWrapper(struct_t *words) 
+execWrapper(struct_t *words)
 {
 	struct_t *pipe = NULL;
 	struct_t *aux = words;
@@ -301,7 +339,7 @@ execWrapper(struct_t *words)
 }
 
 static int
-execWithPipes(struct_t *words) 
+execWithPipes(struct_t *words)
 {
 	int status = -1;
 	struct_t* lastPipe = NULL;
@@ -505,7 +543,7 @@ runSubsts(struct_t **words) {
 
 
 static struct_t *
-buildWordsList(char *str) 
+buildWordsList(char *str)
 {
 	char *token = NULL;
 	struct_t *words = NULL;
@@ -550,7 +588,7 @@ histSubst(struct_t **words)
 		if (!historyGl)
 			break;
 		// 'last command' substitution
-		if ( (ptr = strstr(aux->wordData.word, "!!")) ) {
+		if ((ptr = strstr(aux->wordData.word, "!!"))) {
 			struct_t *lastCom = cloneList(historyGl->histData.command);
 			struct_t *newStart = insertListIntoPos(lastCom, aux);
 			if (!aux->prev)
@@ -560,7 +598,7 @@ histSubst(struct_t **words)
 			aux = newStart;
 		}
 		// 'last word' substitution
-		else if ( (ptr = strstr(aux->wordData.word, "!$")) ) {
+		else if ((ptr = strstr(aux->wordData.word, "!$"))) {
 			struct_t *lastWord = historyGl->histData.command;
 			struct_t *newStart = NULL;
 
@@ -576,7 +614,7 @@ histSubst(struct_t **words)
 			aux = newStart;
 		}
 		// 'nth command' or 'starting with' history substitution
-		else if ( (ptr = strstr(aux->wordData.word, "!")) ) {
+		else if ((ptr = strstr(aux->wordData.word, "!"))) {
 			int num = 0;
 			char *str = NULL;
 			struct_t *match = NULL;

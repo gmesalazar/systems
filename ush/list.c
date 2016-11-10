@@ -5,13 +5,13 @@
 #include "include/list.h"
 
 int
-/* 
+/*
    Insert a node to a linked list
 
    Receive: pointers to the head of the list and to the new node
    Return: 0 on success, -1 otherwise
    */
-insertNode (struct_t **head, struct_t *newNode) 
+insertNode (struct_t **head, struct_t *newNode)
 {
 	if (!newNode)
 		return -1;
@@ -33,13 +33,13 @@ insertNode (struct_t **head, struct_t *newNode)
 }
 
 int
-/* 
+/*
    Deallocate the space used by a list
 
    Receive: pointer to the pointer of the list's head
    Return: 0 on success, 1 if the list was not allocated
    */
-deallocStruct(struct_t **head) 
+deallocStruct(struct_t **head)
 {
 
 	struct_t *aux = *head;
@@ -65,13 +65,13 @@ deallocStruct(struct_t **head)
 }
 
 void
-/* 
-   Print a list, which can be a list of words (command), list of 
+/*
+   Print a list, which can be a list of words (command), list of
    commands (history) or a list implementing the table of variables
 
    Receive: pointer to the head of the list
    */
-printStruct(struct_t *head) 
+printStruct(struct_t *head)
 {
 
 	struct_t *aux = head;
@@ -103,7 +103,7 @@ printStruct(struct_t *head)
 }
 
 struct_t *
-/* 
+/*
    Return the nth element of a list
 
    Receive: pointer to the read of the list and position wanted
@@ -118,13 +118,13 @@ getNthNode (struct_t *head, int num)
 }
 
 struct_t *
-/* 
+/*
    Create a copy of a node
 
    Receive: pointer to the node to be cloned
    Return: pointer to the new node on success, NULL otherwise
    */
-cloneNode (struct_t *node) 
+cloneNode (struct_t *node)
 {
 	struct_t *new = NULL;
 
@@ -146,19 +146,19 @@ cloneNode (struct_t *node)
 }
 
 struct_t *
-/* 
+/*
    Create a copy of a list
 
    Receive: pointer to the head of the list to be cloned
    Return: pointer to the head of the new list on success, NULL otherwise
    */
-cloneList (struct_t *head) 
+cloneList (struct_t *head)
 {
 	return mergeLists (head, NULL);
 }
 
 struct_t *
-/* 
+/*
    Merge two lists into a new one
 
    Receive: pointers to the two lists' heads
@@ -189,13 +189,13 @@ mergeLists (struct_t *stA, struct_t *stB)
 }
 
 struct_t *
-/* 
+/*
    Insert a list into a given position of another list
 
    Receive: pointer to the head of the list to be inserted and
    pointer to the position
    */
-insertListIntoPos(struct_t *listA, struct_t *pos) 
+insertListIntoPos(struct_t *listA, struct_t *pos)
 {
 	struct_t *start = listA;
 	struct_t *end = start;
