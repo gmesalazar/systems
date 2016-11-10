@@ -27,7 +27,7 @@ list_insert(struct header info)
 		while (aux->next)
 			aux = aux->next;
 		aux->next = new;
-		aux->next->seq++;
+		aux->next->seq = aux->seq + 1;
 	}
 
 	return 1;
