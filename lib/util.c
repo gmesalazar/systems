@@ -1,3 +1,7 @@
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "util.h"
 
 char *
@@ -84,4 +88,16 @@ writeLine(int sockd, const void *vptr, size_t n) {
 	}
 
 	return n;
+}
+
+void
+/*
+ * Print message to stderr and exit
+ */
+fatal (char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+	exit(EXIT_FAILURE);
 }
