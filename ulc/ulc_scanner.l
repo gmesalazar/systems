@@ -13,6 +13,7 @@
 %}
 
 %option nounput
+%option yylineno
 
 D	[0-9]
 L	[a-zA-Z]
@@ -66,7 +67,7 @@ L	[a-zA-Z]
 <COMMENT>"*/"       {BEGIN(INITIAL);}
 <COMMENT>[^*\n]+    {}
 <COMMENT>"*"        {}
-<COMMENT><<EOF>>    {}
+<COMMENT><<EOF>>    {return COMMENT_ERROR;}
 <COMMENT>\n+        {yylineno++;}
 
 %%

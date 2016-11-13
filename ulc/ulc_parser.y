@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "ulc_symtable.h"
 #include "ulc_codegen.h"
@@ -9,6 +10,7 @@
 
 extern int yylex();
 extern void yyerror(const char *s);
+extern int yylineno;
 
 %}
 
@@ -46,6 +48,7 @@ extern void yyerror(const char *s);
 %token TLT TMT TLE TME
 %token TSUM TMIN TMULT TDIV TMOD
 %token TNOT
+%token COMMENT_ERROR;
 
 /* start symbol */
 %start prog
@@ -212,5 +215,14 @@ exprlist:
 void
 yyerror(const char *s) 
 {
-    fprintf(stderr, "%s\n", s);
+    switch(yychar) {
+        case COMMENT_ERROR:
+            fprintf(stderr, "\x1B[31m" "%s: error at line %d: unterminated comment\n",
+                getprogname(), yylineno);
+            break;
+        default:
+            fprintf(stderr, "\x1B[31m" "%s: error at line %d: %s\n",
+                getprogname(), yylineno, s);
+            break;
+    }
 }
