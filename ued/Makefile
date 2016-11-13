@@ -1,4 +1,4 @@
-CFLAGS    := -Wall -Wextra -I../lib
+CFLAGS    := -Wall -Wextra -I../include
 
 MAIN      := ued
 UTIL      := util

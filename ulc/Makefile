@@ -14,7 +14,7 @@ UTIL      := util
 
 OBJ       := $(PARSER) $(SCANNER) $(SYMTABLE) $(CODEGEN) $(UTIL) $(VM)
 
-CFLAGS    += -Wall -I../lib -g
+CFLAGS    += -Wall -I../include -g
 
 all: $(ULC_C) $(ULC_I) bin
 

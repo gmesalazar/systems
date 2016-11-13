@@ -5,7 +5,7 @@
 
 #include "ulc_parser.h"
 #include "ulc_symtable.h"
-#include "../lib/util.h"
+#include "../include/util.h"
 
 #define DEBUGM DEBUG(yytext);
 #define YY_NO_INPUT
