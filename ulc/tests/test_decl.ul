@@ -1,7 +1,5 @@
-main 
-{
-    number a;
-    read a;
-    write a;
+main {
+	number a;
+	read a;
+	write a;
 }
-

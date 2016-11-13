@@ -5,7 +5,9 @@
 #define YYDEBUG 0
 #endif
 
-/* op codes */
+/*
+ * Opcodes
+ */
 typedef enum {
 	HALT,
 	STORE,
@@ -34,7 +36,10 @@ typedef enum {
 	OR
 } OpCode;
 
-/* operation names */
+/*
+ * Operation names array:
+ * Index it with the opcode and get the name
+ */
 extern const char* const op_names[];
 
 /* instruction definition */

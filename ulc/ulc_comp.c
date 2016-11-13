@@ -1,49 +1,76 @@
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "util.h"
 #include "ulc_codegen.h"
 
-extern FILE* yyin;
-extern int yyparse();
-extern int yylex_destroy();
-
 #if YYDEBUG
-extern int yydebug;
-yydebug = 1;
+extern int yydebug = 1;
 #endif
 
-int
-main(int argc, char **argv)
-{
-	int i;
-	bool sout = false;
-	char *foname = NULL;
-	FILE *fin = NULL;
+static int compile(const char*);
 
-	for (i = 2; i < argc; i++)
-		if (strcmp(argv[i], "-s") == 0)
-			sout = true;
+/* Dump bytecodes to standard out? */
+static bool stdoutFlag = false;
 
-	if (argc > 1) {
-		fin = fopen(argv[1], "r");
-		if (!fin)
-			fatal("Could not open %s\n", argv[1]);
-		foname = argv[1];
-		foname[strlen(foname) - 1] = 'b';
-		yyin = fin;
+int main(int argc, char *argv[]) {
+	int opt;
+
+	setprogname(argv[0]);
+
+	while ((opt = getopt(argc, argv, "s")) != -1) {
+		switch(opt) {
+			case 's':
+				stdoutFlag = true;
+				break;
+			case '?':
+				break;
+		}
 	}
 
-	while (yyparse());
+	argc -= optind;
+	argv += optind;
 
-	if (sout)
-		dump_code();
-	dump_bcodes(foname);
+	for (int i = 0; i < argc; i++)
+		compile(argv[i]);
 
-	yylex_destroy();
-	fclose(fin);
+	if (argc == 0)
+		fatal("%s: need a damn file name to compile!\n", getprogname());
 
 	return EXIT_SUCCESS;
+}
+
+static int
+compile(const char* source) {
+	extern FILE* yyin;
+	extern int yyparse();
+	char *fout = NULL;
+	size_t fsz;
+
+	yyin = fopen(source, "r");
+	if (!yyin)
+		fatal("Could not open %s\n", source);
+
+	/* Call the parser; currently a bison-generated parser */
+	yyparse();
+
+	if (stdoutFlag)
+		dump_code();
+
+	fsz = strlen(source) + 2;
+	if (!(fout = calloc(1, fsz)))
+		fatal("%s: could not allocate memory\n", getprogname());
+	strlcpy(fout, source, fsz);
+	strlcat(fout, "b", fsz);
+
+	dump_bcodes(fout);
+
+	if (yyin)
+		fclose(yyin);
+	if (fout)
+		free(fout);
+
+	return 0;
 }

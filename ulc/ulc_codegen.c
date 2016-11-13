@@ -63,7 +63,7 @@ dump_bcodes(const char *fname)
 	section_code[code_offset].op = -1;
 	section_code[code_offset].arg = main_offset;
 
-	fwrite(section_code, sizeof(struct instruction), code_offset + 1, fd);
+	fwrite(section_code, sizeof(Instruction), code_offset + 1, fd);
 	fclose(fd);
 }
 

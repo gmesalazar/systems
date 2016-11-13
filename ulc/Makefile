@@ -14,7 +14,7 @@ UTIL      := util
 
 OBJ       := $(PARSER) $(SCANNER) $(SYMTABLE) $(CODEGEN) $(UTIL) $(VM)
 
-CFLAGS    += -Wall -I../lib
+CFLAGS    += -Wall -I../lib -g
 
 all: $(ULC_C) $(ULC_I) bin
 
@@ -50,7 +50,7 @@ $(SCANNER).c: $(SCANNER).l
 clean:
 	rm -rf $(PARSER).c $(PARSER).h $(SCANNER).c $(ULC_I) $(ULC_C)
 	rm -rf *.o
-	rm -rf test/*.b
-	rm -rf test/progs/*.b
+	rm -rf tests/*.ulb
+	rm -rf tests/progs/*.ulb
 
 .PHONY: clean 

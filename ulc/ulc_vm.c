@@ -1,7 +1,7 @@
 /*
-   This VM was taken shamelessly taken from (some bits were modified)
-http://research.microsoft.com/en-us/um/people/rgal/ar_language/external/compiler.pdf
-*/
+ * This VM was taken shamelessly taken from (some bits were modified)
+ * http://research.microsoft.com/en-us/um/people/rgal/ar_language/external/compiler.pdf
+ */
 
 #include <math.h>
 #include <stdio.h>
@@ -13,7 +13,9 @@ http://research.microsoft.com/en-us/um/people/rgal/ar_language/external/compiler
 #include <stdlib.h>
 #endif
 
-/* opcodes */
+/*
+ * Opcode names array
+ */
 const char* const op_names[] = {
 	"halt", "store", "goto_false", "goto", "call", "ret",
 	"data", "ld_int", "ld_var", "in_int",
