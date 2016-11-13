@@ -18,6 +18,7 @@
 const char* const op_names[] = {
 	"HALT",
 	"STORE",
+	"STORE_ARG",
 	"GOTO_FALSE",
 	"GOTO",
 	"CALL",
@@ -25,6 +26,7 @@ const char* const op_names[] = {
 	"DATA",
 	"LD_INT",
 	"LD_VAR",
+	"LD_AR",
 	"IN_INT",
 	"OUT_INT",
 	"LT",
@@ -33,12 +35,14 @@ const char* const op_names[] = {
 	"GT",
 	"LE",
 	"GE",
+	"NEG",
 	"ADD",
 	"SUB",
 	"MULT",
 	"DIV",
 	"MOD",
 	"PWR",
+	"NOT",
 	"AND",
 	"OR",
 	"END"
@@ -51,6 +55,7 @@ static Instruction section_code[1000];
 /* registers */
 static int pc = 0;      // the program counter
 static int ar = 0;      // the active record
+static int fp = 0;      // the frame pointer
 static int sp = 0;      // the top of the stack
 static Instruction ir;
 
@@ -78,6 +83,9 @@ fetch_exec_cycle()
 				// store the top of the stack into an address
 				section_data[ir.arg] = section_data[sp--];
 				break;
+			case STORE_ARG:
+				section_data[ir.arg] = section_data[++fp];
+				break;
 			case GOTO_FALSE:
 				// jump to an address if the top of the stack is falsey
 				if (section_data[sp--] == 0)
@@ -97,6 +105,9 @@ fetch_exec_cycle()
 			case LD_VAR:
 				// pushes the value of a variable onto the stack
 				section_data[++sp] = section_data[ar + ir.arg];
+				break;
+			case LD_AR:
+				fp = ar = sp + 1;
 				break;
 			case LT:
 				if (section_data[sp - 1] < section_data[sp])
@@ -142,6 +153,9 @@ fetch_exec_cycle()
 				section_data[sp - 1] = section_data[sp - 1] - section_data[sp];
 				sp--;
 				break;
+			case NEG:
+				section_data[sp] = -section_data[sp];
+				break;
 			case MULT:
 				section_data[sp - 1] = section_data[sp - 1] * section_data[sp];
 				sp--;
@@ -158,6 +172,9 @@ fetch_exec_cycle()
 				section_data[sp - 1] = (long) pow(section_data[sp - 1], section_data[sp]);
 				sp--;
 				break;
+			case NOT:
+				section_data[sp] = !section_data[sp];
+				break;
 			case AND:
 				section_data[sp - 1] = section_data[sp - 1] && section_data[sp];
 				sp--;
@@ -171,9 +188,9 @@ fetch_exec_cycle()
 				pc = ir.arg;
 				break;
 			case RET:
+				sp = ar;
 				pc = section_data[sp - 1];
 				section_data[sp - 1] = section_data[sp];
-				sp--;
 				break;
 			default:
 				printf("bad instruction: %s", op_names[ir.op]);

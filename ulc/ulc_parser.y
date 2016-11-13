@@ -81,8 +81,8 @@ paramlist:
 ;
 
 paramlistcont:
-               type TID {install($2, alloc_d()); context_check(STORE, $2);}
-             | type TID TCOMMA {install($2, alloc_d()); context_check(STORE, $2);} paramlistcont
+               type TID {install($2, alloc_d()); context_check(STORE_ARG, $2);}
+             | type TID TCOMMA {install($2, alloc_d()); context_check(STORE_ARG, $2);} paramlistcont
              | type TID TLBRACK TRBRACK
              | type TID TLBRACK TRBRACK TCOMMA paramlistcont
 ;
@@ -183,8 +183,8 @@ multexpr:
 
 unexpr:
         primexpr
-      | TMIN primexpr
-      | TNOT primexpr
+      | TMIN primexpr {gen_code(NEG, 0);}
+      | TNOT primexpr {gen_code(NOT, 0);}
 ;
 
 lvalexpr:
@@ -194,7 +194,7 @@ lvalexpr:
 
 primexpr:
           TID {context_check(LD_VAR, $1);}
-        | TID TLPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.addr_ret = alloc_c();} exprlist TRPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.addr_ret, LD_INT, gen_label());}
+        | TID TLPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.addr_ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TRPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.addr_ret, LD_INT, gen_label());}
         | TID TLBRACK expr TRBRACK
         | TLPAREN expr TRPAREN
         | TCHARLIT
