@@ -1,5 +1,5 @@
-#ifndef LIST_H
-#define LIST_H
+#ifndef list_h
+#define list_h
 
 typedef struct words_list_data wlist_data_t;
 typedef struct var_table_data table_data_t;
@@ -50,4 +50,4 @@ struct_t *mergeLists (struct_t *stA, struct_t *stB);
 struct_t *getNthNode (struct_t *head, int num);
 struct_t *insertListIntoPos(struct_t *listA, struct_t *pos);
 
-#endif
+#endif // list_h

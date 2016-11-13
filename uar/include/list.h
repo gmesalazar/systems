@@ -1,5 +1,5 @@
-#ifndef LIST_H
-#define LIST_H
+#ifndef list_h
+#define list_h
 
 #include "uar.h"
 
@@ -15,4 +15,4 @@ int list_insert(struct header);
 struct node *list_lookup(const char *);
 struct node *list_next(struct node *);
 
-#endif //LIST_H
+#endif // list_h

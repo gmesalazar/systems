@@ -1,5 +1,5 @@
-#ifndef SYMTABLE_H
-#define SYMTABLE_H
+#ifndef ulc_symtable_h
+#define ulc_symtable_h
 
 #include "ulc_codegen.h"
 

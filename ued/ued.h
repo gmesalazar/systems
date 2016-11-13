@@ -1,5 +1,5 @@
-#ifndef UED_H
-#define UED_H
+#ifndef ued_h
+#define ued_h
 
 #define PRG_ACRO "ued"
 #define PRG_NAME "micro editor"
@@ -16,4 +16,4 @@
 
 #define TCLR "\033[1P"
 
-#endif
+#endif // ued_h

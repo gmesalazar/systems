@@ -1,9 +1,5 @@
-#ifndef VM_H
-#define VM_H
-
-#ifndef YYDEBUG
-#define YYDEBUG 0
-#endif
+#ifndef ulc_vm_h
+#define ulc_vm_h
 
 /*
  * Opcodes

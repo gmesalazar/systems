@@ -1,5 +1,5 @@
-#ifndef _CODEGEN_H
-#define _CODEGEN_H
+#ifndef ulc_codegen_h
+#define ulc_codegen_h
 
 #include "ulc_vm.h"
 

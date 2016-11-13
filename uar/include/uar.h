@@ -1,5 +1,5 @@
-#ifndef AR_H
-#define AR_H
+#ifndef uar_h
+#define uar_h
 
 #define AR_MAGIC_STR "!<arch>\n"
 #define AR_MAGIC_SZ 8
@@ -26,4 +26,4 @@ struct header {
     char magic[MAGIC_SZ];
 };
 
-#endif //AR_H
+#endif // uar_h
