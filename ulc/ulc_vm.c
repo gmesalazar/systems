@@ -5,170 +5,211 @@
 
 #include <math.h>
 #include <stdio.h>
-
-#include "util.h"
-#include "ulc_vm.h"
-
 #ifdef VM
 #include <stdlib.h>
 #endif
+
+#include "ulc_vm.h"
+#include "util.h"
 
 /*
  * Opcode names array
  */
 const char* const op_names[] = {
-	"halt", "store", "goto_false", "goto", "call", "ret",
-	"data", "ld_int", "ld_var", "in_int",
-	"out_int", "lt", "eq", "ne", "gt", "le", "ge", "add",
-	"sub", "mult", "div", "mod", "pwr", "and", "or"
+	"HALT",
+	"STORE",
+	"GOTO_FALSE",
+	"GOTO",
+	"CALL",
+	"RET",
+	"DATA",
+	"LD_INT",
+	"LD_VAR",
+	"IN_INT",
+	"OUT_INT",
+	"LT",
+	"EQ",
+	"NE",
+	"GT",
+	"LE",
+	"GE",
+	"ADD",
+	"SUB",
+	"MULT",
+	"DIV",
+	"MOD",
+	"PWR",
+	"AND",
+	"OR",
+	"END"
 };
 
 /* the store */
-static long section_stack[1000];
+static long section_data[1000];
 static Instruction section_code[1000];
 
 /* registers */
-static int pc = 0;
-static int ar = 0;
-static int top = 0;
+static int pc = 0;      // the program counter
+static int ar = 0;      // the active record
+static int sp = 0;      // the top of the stack
 static Instruction ir;
 
 void
 fetch_exec_cycle()
 {
 	do {
-		ir = section_code[pc++];
+		ir = section_code[pc++]; // grab our current instruction
+		                         // and increment our program counter
 		DEBUG(op_names[ir.op]);
 
+		// what instruction is that?
 		switch (ir.op) {
 			case HALT:
 				break;
 			case READ_INT:
-				scanf("%ld", section_stack + ar + ir.arg);
+				// read an int into an address in the current frame
+				scanf("%ld", section_data + ar + ir.arg);
 				break;
 			case WRITE_INT:
-				printf("%ld\n", section_stack[top--]);
+				// write an int which is on the top of the stack
+				printf("%ld\n", section_data[sp--]);
 				break;
 			case STORE:
-				section_stack[ir.arg] = section_stack[top--];
+				// store the top of the stack into an address
+				section_data[ir.arg] = section_data[sp--];
 				break;
 			case GOTO_FALSE:
-				if (section_stack[top--] == 0)
+				// jump to an address if the top of the stack is falsey
+				if (section_data[sp--] == 0)
 					pc = ir.arg;
 				break;
 			case GOTO:
+				// jump to an address
 				pc = ir.arg;
 				break;
 			case DATA:
-				top = top + ir.arg;
+				sp = sp + ir.arg;
 				break;
 			case LD_INT:
-				section_stack[++top] = ir.arg;
+				// pushes an int onto the stack
+				section_data[++sp] = ir.arg;
 				break;
 			case LD_VAR:
-				section_stack[++top] = section_stack[ar + ir.arg];
+				// pushes the value of a variable onto the stack
+				section_data[++sp] = section_data[ar + ir.arg];
 				break;
 			case LT:
-				if (section_stack[top - 1] < section_stack[top])
-					section_stack[--top] = 1;
+				if (section_data[sp - 1] < section_data[sp])
+					section_data[--sp] = 1;
 				else
-					section_stack[--top] = 0;
+					section_data[--sp] = 0;
 				break;
 			case EQ:
-				if (section_stack[top - 1] == section_stack[top])
-					section_stack[--top] = 1;
+				if (section_data[sp - 1] == section_data[sp])
+					section_data[--sp] = 1;
 				else
-					section_stack[--top] = 0;
+					section_data[--sp] = 0;
 				break;
 			case NEQ:
-				if (section_stack[top - 1] != section_stack[top])
-					section_stack[--top] = 1;
+				if (section_data[sp - 1] != section_data[sp])
+					section_data[--sp] = 1;
 				else
-					section_stack[--top] = 0;
+					section_data[--sp] = 0;
 				break;
 			case GT:
-				if (section_stack[top - 1] > section_stack[top])
-					section_stack[--top] = 1;
+				if (section_data[sp - 1] > section_data[sp])
+					section_data[--sp] = 1;
 				else
-					section_stack[--top] = 0;
+					section_data[--sp] = 0;
 				break;
 			case LE:
-				if (section_stack[top - 1] <= section_stack[top])
-					section_stack[--top] = 1;
+				if (section_data[sp - 1] <= section_data[sp])
+					section_data[--sp] = 1;
 				else
-					section_stack[--top] = 0;
+					section_data[--sp] = 0;
 				break;
 			case GE:
-				if (section_stack[top - 1] >= section_stack[top])
-					section_stack[--top] = 1;
+				if (section_data[sp - 1] >= section_data[sp])
+					section_data[--sp] = 1;
 				else
-					section_stack[--top] = 0;
+					section_data[--sp] = 0;
 				break;
 			case ADD:
-				section_stack[top - 1] = section_stack[top - 1] + section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] + section_data[sp];
+				sp--;
 				break;
 			case SUB:
-				section_stack[top - 1] = section_stack[top - 1] - section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] - section_data[sp];
+				sp--;
 				break;
 			case MULT:
-				section_stack[top - 1] = section_stack[top - 1] * section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] * section_data[sp];
+				sp--;
 				break;
 			case DIV:
-				section_stack[top - 1] = section_stack[top - 1] * section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] * section_data[sp];
+				sp--;
 				break;
 			case MOD:
-				section_stack[top - 1] = section_stack[top - 1] % section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] % section_data[sp];
+				sp--;
 				break;
 			case PWD:
-				section_stack[top - 1] = (long) pow(section_stack[top - 1], section_stack[top]);
-				top--;
+				section_data[sp - 1] = (long) pow(section_data[sp - 1], section_data[sp]);
+				sp--;
 				break;
 			case AND:
-				section_stack[top - 1] = section_stack[top - 1] && section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] && section_data[sp];
+				sp--;
 				break;
 			case OR:
-				section_stack[top - 1] = section_stack[top - 1] || section_stack[top];
-				top--;
+				section_data[sp - 1] = section_data[sp - 1] || section_data[sp];
+				sp--;
 				break;
 			case CALL:
+				// set up registers for function call
 				pc = ir.arg;
 				break;
 			case RET:
-				pc = section_stack[top - 1];
-				section_stack[top - 1] = section_stack[top];
-				top--;
+				pc = section_data[sp - 1];
+				section_data[sp - 1] = section_data[sp];
+				sp--;
 				break;
 			default:
 				printf("bad instruction: %s", op_names[ir.op]);
 		}
-	} while (ir.op != HALT);
+	} while (ir.op != HALT); // repeat until our program halts
 }
 
-#ifdef VM
+#ifdef VM // are we compiling the interpreter program?
 int main (int argc, char **argv)
 {
 	FILE *fin = NULL;
 	Instruction instr = {0};
 
-	if (argc != 2)
-		fatal("usage:\t%s bytecodes_file", argv[0]);
+	setprogname(argv[0]);
 
-	fin = fopen(argv[1], "rb");
-	fread(&instr, sizeof(Instruction), 1, fin);
-	while (instr.op != -1) {
+	if (argc != 2)
+		fatal("usage:\t%s file", getprogname());
+
+	if (!(fin = fopen(argv[1], "rb")))
+		fatal("%s: couldn't open the bytecodes file\n", getprogname());
+
+	// Load bytecode instructions from the file into memory
+	while (true) {
+		if (fread(&instr, sizeof(Instruction), 1, fin) != 1)
+			fatal("%s: error loading bytecodes\n", getprogname());
+		// if instruction read was "END", stop and set up stack top
+		// and 'main' pointer
+		if (instr.op == END)
+			break;
+		// ... otherwise, just increment pc and repeat
 		section_code[pc++] = instr;
-		fread(&instr, sizeof(Instruction), 1, fin);
 	}
 
-	/* first -1 flag: stack top*/
-	top = instr.arg;
-	/* segond -1 flag: main offset */
+	// first END instruction contains the stack top
+	sp = instr.arg;
+	// second END instruction contains the entry point pointer
 	fread(&instr, sizeof(Instruction), 1, fin);
 	pc = instr.arg;
 

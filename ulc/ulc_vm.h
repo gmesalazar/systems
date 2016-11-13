@@ -33,7 +33,8 @@ typedef enum {
 	MOD,
 	PWD,
 	AND,
-	OR
+	OR,
+	END
 } OpCode;
 
 /*

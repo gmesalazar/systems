@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "ulc_codegen.h"
+#include "ulc_vm.h"
 #include "util.h"
 
 static struct instruction section_code[1000];
@@ -57,10 +58,10 @@ dump_bcodes(const char *fname)
 	if (!(fd = fopen(fname, "w")))
 		fatal("Could not open bytecodes file\n");
 
-	section_code[code_offset].op = -1;
+	section_code[code_offset].op = END;
 	section_code[code_offset++].arg = data_offset;
 
-	section_code[code_offset].op = -1;
+	section_code[code_offset].op = END;
 	section_code[code_offset].arg = main_offset;
 
 	fwrite(section_code, sizeof(Instruction), code_offset + 1, fd);
