@@ -65,7 +65,6 @@ fetch_exec_cycle()
 	do {
 		ir = section_code[pc++]; // grab our current instruction
 		                         // and increment our program counter
-		DEBUG(op_names[ir.op]);
 
 		// what instruction is that?
 		switch (ir.op) {

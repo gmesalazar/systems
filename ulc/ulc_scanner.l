@@ -7,7 +7,6 @@
 #include "ulc_symtable.h"
 #include "../include/util.h"
 
-#define DEBUGM DEBUG(yytext);
 #define YY_NO_INPUT
 
 %}
@@ -23,45 +22,45 @@ L	[a-zA-Z]
 %%
 
 [ \t\n]+            ;
-"main"              {DEBUGM strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TMAIN;}
-"number"            {DEBUGM return TNUM;}
-"char"              {DEBUGM return TCHAR;}
-","                 {DEBUGM return TCOMMA;}
-";"                 {DEBUGM return TSCOLON;}
-"["                 {DEBUGM return TLBRACK;}
-"]"                 {DEBUGM return TRBRACK;}
-"("                 {DEBUGM return TLPAREN;}
-")"                 {DEBUGM return TRPAREN;}
-"{"                 {DEBUGM return TLBRACE;}
-"}"                 {DEBUGM return TRBRACE;}
-"return"            {DEBUGM return TRET;}
-"read"              {DEBUGM return TREAD;}
-"write"             {DEBUGM return TWRIT;}
-"if"                {DEBUGM return TIF;}
-"else"              {DEBUGM return TELSE;}
-"while"             {DEBUGM return TWHILE;}
-"="                 {DEBUGM return TASSIGN;}
-"?"                 {DEBUGM return TCONDIF;}
-":"                 {DEBUGM return TCONDELSE;}
-"or"                {DEBUGM return TOR;}
-"and"               {DEBUGM return TAND;}
-"=="                {DEBUGM return TEQ;}
-"!="                {DEBUGM return TNEQ;}
-"<"                 {DEBUGM return TLT;}
-">"                 {DEBUGM return TMT;}
-"<="                {DEBUGM return TLE;}
-">="                {DEBUGM return TME;}
-"+"                 {DEBUGM return TSUM;}
-"-"                 {DEBUGM return TMIN;}
-"*"                 {DEBUGM return TMULT;}
-"/"                 {DEBUGM return TDIV;}
-"%"                 {DEBUGM return TMOD;}
-"!"                 {DEBUGM return TNOT;}
-{D}+                {DEBUG("number") yylval.litnum = atol(yytext); return TNUMLIT;}
-'(\\.|[^\\'])+'     {DEBUG("char literal") yylval.litchar = yytext[0]; return TCHARLIT;}
-{L}({D}|{L})*       {DEBUG("identifier") strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TID;}
-\"(\\.|[^\\"])*\"   {DEBUG("strig literal") yylval.litstr = strdup(yytext); return TSTRLIT;}
-.                   {DEBUGM;}
+"main"              {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TMAIN;}
+"number"            {return TNUM;}
+"char"              {return TCHAR;}
+","                 {return TCOMMA;}
+";"                 {return TSCOLON;}
+"["                 {return TLBRACK;}
+"]"                 {return TRBRACK;}
+"("                 {return TLPAREN;}
+")"                 {return TRPAREN;}
+"{"                 {return TLBRACE;}
+"}"                 {return TRBRACE;}
+"return"            {return TRET;}
+"read"              {return TREAD;}
+"write"             {return TWRIT;}
+"if"                {return TIF;}
+"else"              {return TELSE;}
+"while"             {return TWHILE;}
+"="                 {return TASSIGN;}
+"?"                 {return TCONDIF;}
+":"                 {return TCONDELSE;}
+"or"                {return TOR;}
+"and"               {return TAND;}
+"=="                {return TEQ;}
+"!="                {return TNEQ;}
+"<"                 {return TLT;}
+">"                 {return TMT;}
+"<="                {return TLE;}
+">="                {return TME;}
+"+"                 {return TSUM;}
+"-"                 {return TMIN;}
+"*"                 {return TMULT;}
+"/"                 {return TDIV;}
+"%"                 {return TMOD;}
+"!"                 {return TNOT;}
+{D}+                {yylval.litnum = atol(yytext); return TNUMLIT;}
+'(\\.|[^\\'])+'     {yylval.litchar = yytext[0]; return TCHARLIT;}
+{L}({D}|{L})*       {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TID;}
+\"(\\.|[^\\"])*\"   {yylval.litstr = strdup(yytext); return TSTRLIT;}
+.                   {}
 
 <INITIAL>"/*"       {BEGIN(COMMENT);}
 <COMMENT>"*/"       {BEGIN(INITIAL);}

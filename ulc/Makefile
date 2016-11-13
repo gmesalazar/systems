@@ -22,9 +22,6 @@ bin:
 	mkdir -p ./bin
 	cp $(ULC_C) $(ULC_I) ./bin
 
-debug: all
-debug: CFLAGS += -DYYDEBUG -g
-
 $(ULC_C): $(COMP).c $(OBJ:=.o)
 	$(CC) $(CFLAGS) -o $(ULC_C) $^ -lfl -lm
 

@@ -18,7 +18,6 @@ bool  isNumber(char *);
 ssize_t readLine(int fd, void *buff, size_t sz);
 ssize_t writeLine(int sfd, const void *buff, size_t sz);
 
-#define DEBUG(M) if (YYDEBUG) printf("%s\n", M);
 void fatal(char *fmt, ...);
 
 #endif
