@@ -22,44 +22,44 @@ L	[a-zA-Z]
 %%
 
 [ \t\n]+            ;
-"main"              {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TMAIN;}
-"number"            {return TNUM;}
-"char"              {return TCHAR;}
-","                 {return TCOMMA;}
-";"                 {return TSCOLON;}
-"["                 {return TLBRACK;}
-"]"                 {return TRBRACK;}
-"("                 {return TLPAREN;}
-")"                 {return TRPAREN;}
-"{"                 {return TLBRACE;}
-"}"                 {return TRBRACE;}
-"return"            {return TRET;}
-"read"              {return TREAD;}
-"write"             {return TWRIT;}
-"if"                {return TIF;}
-"else"              {return TELSE;}
-"while"             {return TWHILE;}
-"="                 {return TASSIGN;}
-"?"                 {return TCONDIF;}
-":"                 {return TCONDELSE;}
-"or"                {return TOR;}
-"and"               {return TAND;}
-"=="                {return TEQ;}
-"!="                {return TNEQ;}
-"<"                 {return TLT;}
-">"                 {return TMT;}
-"<="                {return TLE;}
-">="                {return TME;}
-"+"                 {return TSUM;}
-"-"                 {return TMIN;}
-"*"                 {return TMULT;}
-"/"                 {return TDIV;}
-"%"                 {return TMOD;}
-"!"                 {return TNOT;}
-{D}+                {yylval.litnum = atol(yytext); return TNUMLIT;}
-'(\\.|[^\\'])+'     {yylval.litchar = yytext[0]; return TCHARLIT;}
-{L}({D}|{L})*       {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TID;}
-\"(\\.|[^\\"])*\"   {yylval.litstr = strdup(yytext); return TSTRLIT;}
+"main"              {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TK_MAIN;}
+"number"            {return TK_TYPE_NUM;}
+"char"              {return TK_TYPE_CHR;}
+";"                 {return TK_SCOLON;}
+","                 {return TK_COMMA;}
+"["                 {return TK_LBRACK;}
+"]"                 {return TK_RBRACK;}
+"("                 {return TK_LPAREN;}
+")"                 {return TK_RPAREN;}
+"{"                 {return TK_LBRACE;}
+"}"                 {return TK_RBRACE;}
+"return"            {return TK_RETURN;}
+"read"              {return TK_READ;}
+"write"             {return TK_WRITE;}
+"if"                {return TK_IF;}
+"else"              {return TK_ELSE;}
+"while"             {return TK_WHILE;}
+"="                 {return TK_ASSIGN;}
+"?"                 {return TK_COND_IF;}
+":"                 {return TK_COND_ELSE;}
+"or"                {return TK_OR;}
+"and"               {return TK_AND;}
+"=="                {return TK_EQ;}
+"!="                {return TK_NEQ;}
+"<"                 {return TK_LT;}
+">"                 {return TK_MT;}
+"<="                {return TK_LE;}
+">="                {return TK_ME;}
+"+"                 {return TK_ADD;}
+"-"                 {return TK_SUB;}
+"*"                 {return TK_MULT;}
+"/"                 {return TK_DIV;}
+"%"                 {return TK_MOD;}
+"!"                 {return TK_NEG;}
+{D}+                {yylval.litnum = atol(yytext); return TK_LIT_NUM;}
+'(\\.|[^\\'])+'     {yylval.litchar = yytext[0]; return TK_LIT_CHR;}
+{L}({D}|{L})*       {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TK_NAME;}
+\"(\\.|[^\\"])*\"   {yylval.litstr = strdup(yytext); return TK_LIT_STR;}
 .                   {}
 
 <INITIAL>"/*"       {BEGIN(COMMENT);}

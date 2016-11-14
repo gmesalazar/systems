@@ -29,25 +29,27 @@ extern int yylineno;
     } func;
 }
 
-%token <id> TMAIN
-%token <id> TID
-%token TNUM TCHAR
-%token <litnum> TNUMLIT 
-%token <litchar> TCHARLIT 
-%token <litstr> TSTRLIT
-%token TCOMMA TSCOLON
-%token TLBRACK TRBRACK
-%token TLPAREN TRPAREN
-%token TLBRACE TRBRACE
-%token TRET TREAD TWRIT
-%token <lbls> TIF TWHILE
-%token TELSE
-%token TASSIGN
-%token TCONDIF TCONDELSE
-%token TOR TAND TEQ TNEQ
-%token TLT TMT TLE TME
-%token TSUM TMIN TMULT TDIV TMOD
-%token TNOT
+%token <id> TK_MAIN
+%token <id> TK_NAME
+%token TK_TYPE_NUM TK_TYPE_CHR
+%token <litnum> TK_LIT_NUM
+%token <litchar> TK_LIT_CHR
+%token <litstr> TK_LIT_STR
+%token TK_COMMA TK_SCOLON
+%token TK_LBRACK TK_RBRACK
+%token TK_LPAREN TK_RPAREN
+%token TK_LBRACE TK_RBRACE
+%token TK_RETURN TK_READ TK_WRITE
+%token <lbls> TK_IF TK_WHILE
+%token TK_ELSE
+%token TK_ASSIGN
+%token TK_COND_IF TK_COND_ELSE
+%token TK_OR TK_AND TK_EQ TK_NEQ
+%token TK_LT TK_MT TK_LE TK_ME
+%token TK_ADD TK_SUB TK_MULT TK_DIV TK_MOD
+%token TK_NEG
+
+/* flag token to signal unterminated comments from the scanner */
 %token COMMENT_ERROR;
 
 /* start symbol */
@@ -60,21 +62,21 @@ prog:
 ;
 
 funcvardecl:
-             type TID {install($2, alloc_d());} vardecl TSCOLON funcvardecl
-           | type TID TASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl TSCOLON funcvardecl
-           | type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON funcvardecl
-           | type TID TLPAREN {install($2, gen_label());} paramlist TRPAREN block funcvardecl
+             type TK_NAME {install($2, alloc_d());} vardecl TK_SCOLON funcvardecl
+           | type TK_NAME TK_ASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl TK_SCOLON funcvardecl
+           | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON funcvardecl
+           | type TK_NAME TK_LPAREN {install($2, gen_label());} paramlist TK_RPAREN block funcvardecl
            |
 ;
 
 progdecl:
-          TMAIN {install($1, gen_label()); set_main_offset(gen_label());} block
+          TK_MAIN {install($1, gen_label()); set_main_offset(gen_label());} block
 ;
 
 vardecl:
-          TCOMMA TID {install($2, alloc_d());} vardecl
-        | TCOMMA TID TASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl
-        | TCOMMA TID TLBRACK TNUMLIT TRBRACK vardecl
+          TK_COMMA TK_NAME {install($2, alloc_d());} vardecl
+        | TK_COMMA TK_NAME TK_ASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl
+        | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl
         |
 ;
 
@@ -84,27 +86,27 @@ paramlist:
 ;
 
 paramlistcont:
-               type TID {install($2, alloc_d()); context_check(STORE_ARG, $2);}
-             | type TID TCOMMA {install($2, alloc_d()); context_check(STORE_ARG, $2);} paramlistcont
-             | type TID TLBRACK TRBRACK
-             | type TID TLBRACK TRBRACK TCOMMA paramlistcont
+               type TK_NAME {install($2, alloc_d()); context_check(STORE_ARG, $2);}
+             | type TK_NAME TK_COMMA {install($2, alloc_d()); context_check(STORE_ARG, $2);} paramlistcont
+             | type TK_NAME TK_LBRACK TK_RBRACK
+             | type TK_NAME TK_LBRACK TK_RBRACK TK_COMMA paramlistcont
 ;
 
 block:
-       TLBRACE {push_scope();} vardecllist commlist TRBRACE {pop_scope();}
-     | TLBRACE TRBRACE
+       TK_LBRACE {push_scope();} vardecllist commlist TK_RBRACE {pop_scope();}
+     | TK_LBRACE TK_RBRACE
 ;
 
 vardecllist:
-             type TID {install($2, alloc_d());} vardecl TSCOLON vardecllist
-           | type TID TASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl TSCOLON vardecllist
-           | type TID TLBRACK TNUMLIT TRBRACK vardecl TSCOLON vardecllist {install($2, alloc_d());}
+             type TK_NAME {install($2, alloc_d());} vardecl TK_SCOLON vardecllist
+           | type TK_NAME TK_ASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl TK_SCOLON vardecllist
+           | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON vardecllist {install($2, alloc_d());}
            |
 ;
 
 type:
-      TNUM
-    | TCHAR
+      TK_TYPE_NUM
+    | TK_TYPE_CHR
 ;
 
 commlist:
@@ -113,25 +115,25 @@ commlist:
 ;
 
 comm:
-       TSCOLON
-     | expr TSCOLON
-     | TRET expr TSCOLON {gen_code(RET, 0);}
-     | TREAD lvalexpr {gen_code(READ_INT, $<litnum>2);} readvars TSCOLON 
-     | TWRIT expr TSCOLON {gen_code(WRITE_INT, 0);}
-     | TWRIT TSTRLIT TSCOLON
+       TK_SCOLON
+     | expr TK_SCOLON
+     | TK_RETURN expr TK_SCOLON {gen_code(RET, 0);}
+     | TK_READ lvalexpr {gen_code(READ_INT, $<litnum>2);} readvars TK_SCOLON 
+     | TK_WRITE expr TK_SCOLON {gen_code(WRITE_INT, 0);}
+     | TK_WRITE TK_LIT_STR TK_SCOLON
      | ifstmt
-     | ifstmt TELSE comm {back_patch($<lbls>$.addr_goto, GOTO, gen_label());}
-     | TWHILE TLPAREN {$1.addr_goto = gen_label();} expr {$1.addr_goto_false = alloc_c();} TRPAREN comm {gen_code(GOTO, $1.addr_goto);back_patch($1.addr_goto_false, GOTO_FALSE, gen_label()); }
+     | ifstmt TK_ELSE comm {back_patch($<lbls>$.addr_goto, GOTO, gen_label());}
+     | TK_WHILE TK_LPAREN {$1.addr_goto = gen_label();} expr {$1.addr_goto_false = alloc_c();} TK_RPAREN comm {gen_code(GOTO, $1.addr_goto);back_patch($1.addr_goto_false, GOTO_FALSE, gen_label()); }
      | block
 ;
 
 readvars:
-          TCOMMA lvalexpr readvars {gen_code(READ_INT, $<litnum>2);}
+          TK_COMMA lvalexpr readvars {gen_code(READ_INT, $<litnum>2);}
         |
 ;
 
 ifstmt:
-        TIF TLPAREN expr TRPAREN {$1.addr_goto_false = alloc_c();} comm {$1.addr_goto = alloc_c(); $<lbls>$ = $1; back_patch($1.addr_goto_false, GOTO_FALSE, gen_label()); back_patch($1.addr_goto, GOTO, gen_label());}
+        TK_IF TK_LPAREN expr TK_RPAREN {$1.addr_goto_false = alloc_c();} comm {$1.addr_goto = alloc_c(); $<lbls>$ = $1; back_patch($1.addr_goto_false, GOTO_FALSE, gen_label()); back_patch($1.addr_goto, GOTO, gen_label());}
 ;
 
 expr:
@@ -139,74 +141,74 @@ expr:
 ;
 
 assignexpr: condexpr
-          | lvalexpr TASSIGN assignexpr {gen_code(STORE, $<litnum>1);}
+          | lvalexpr TK_ASSIGN assignexpr {gen_code(STORE, $<litnum>1);}
 ;
 
 condexpr:
            orexpr
-         | orexpr TCONDIF {$<lbls>$.addr_goto_false = alloc_c();} expr {$<lbls>$.addr_goto = alloc_c(); back_patch($<lbls>3.addr_goto_false, GOTO_FALSE, gen_label());} TCONDELSE condexpr {back_patch($<lbls>5.addr_goto, GOTO, gen_label());}
+         | orexpr TK_COND_IF {$<lbls>$.addr_goto_false = alloc_c();} expr {$<lbls>$.addr_goto = alloc_c(); back_patch($<lbls>3.addr_goto_false, GOTO_FALSE, gen_label());} TK_COND_ELSE condexpr {back_patch($<lbls>5.addr_goto, GOTO, gen_label());}
 ;
 
 orexpr:
         andexpr
-      | orexpr TOR andexpr {gen_code(OR, 0);}
+      | orexpr TK_OR andexpr {gen_code(OR, 0);}
 ;
 
 andexpr:
          eqexpr
-       | andexpr TAND eqexpr {gen_code(AND, 0);}
+       | andexpr TK_AND eqexpr {gen_code(AND, 0);}
 ;
 
 eqexpr:
         ineqexpr
-      | eqexpr TEQ ineqexpr {gen_code(EQ, 0);}
-      | eqexpr TNEQ ineqexpr {gen_code(NEQ, 0);}
+      | eqexpr TK_EQ ineqexpr {gen_code(EQ, 0);}
+      | eqexpr TK_NEQ ineqexpr {gen_code(NEQ, 0);}
 ;
 
 ineqexpr:
          addexpr
-       | ineqexpr TLT addexpr {gen_code(LT, 0);}
-       | ineqexpr TMT addexpr {gen_code(GT, 0);}
-       | ineqexpr TLE addexpr {gen_code(LE, 0);}
-       | ineqexpr TME addexpr {gen_code(GE, 0);}
+       | ineqexpr TK_LT addexpr {gen_code(LT, 0);}
+       | ineqexpr TK_MT addexpr {gen_code(GT, 0);}
+       | ineqexpr TK_LE addexpr {gen_code(LE, 0);}
+       | ineqexpr TK_ME addexpr {gen_code(GE, 0);}
 ;
 
 addexpr:
          multexpr
-       | addexpr TSUM multexpr {gen_code(ADD, 0);}
-       | addexpr TMIN multexpr {gen_code(SUB, 0);}
+       | addexpr TK_ADD multexpr {gen_code(ADD, 0);}
+       | addexpr TK_SUB multexpr {gen_code(SUB, 0);}
 ;
 
 multexpr:
           unexpr
-        | multexpr TMULT unexpr {gen_code(MULT, 0);}
-        | multexpr TDIV unexpr {gen_code(DIV, 0);}
-        | multexpr TMOD unexpr {gen_code(MOD, 0);}
+        | multexpr TK_MULT unexpr {gen_code(MULT, 0);}
+        | multexpr TK_DIV unexpr {gen_code(DIV, 0);}
+        | multexpr TK_MOD unexpr {gen_code(MOD, 0);}
 ;
 
 unexpr:
         primexpr
-      | TMIN primexpr {gen_code(NEG, 0);}
-      | TNOT primexpr {gen_code(NOT, 0);}
+      | TK_SUB primexpr {gen_code(NEG, 0);}
+      | TK_NEG primexpr {gen_code(NOT, 0);}
 ;
 
 lvalexpr:
-          TID {$<litnum>$ = getsymbol($1, 1)->offset;}
-        | TID TLBRACK expr TRBRACK
+          TK_NAME {$<litnum>$ = getsymbol($1, 1)->offset;}
+        | TK_NAME TK_LBRACK expr TK_RBRACK
 ;
 
 primexpr:
-          TID {context_check(LD_VAR, $1);}
-        | TID TLPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.addr_ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TRPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.addr_ret, LD_INT, gen_label());}
-        | TID TLBRACK expr TRBRACK
-        | TLPAREN expr TRPAREN
-        | TCHARLIT
-        | TNUMLIT {gen_code(LD_INT, $1);}
+          TK_NAME {context_check(LD_VAR, $1);}
+        | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.addr_ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TK_RPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.addr_ret, LD_INT, gen_label());}
+        | TK_NAME TK_LBRACK expr TK_RBRACK
+        | TK_LPAREN expr TK_RPAREN
+        | TK_LIT_CHR
+        | TK_LIT_NUM {gen_code(LD_INT, $1);}
 ;
 
 exprlist:
           assignexpr
-        | exprlist TCOMMA assignexpr
+        | exprlist TK_COMMA assignexpr
         |
 ;
 
