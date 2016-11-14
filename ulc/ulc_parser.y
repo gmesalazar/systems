@@ -221,6 +221,7 @@ yyerror(const char *s)
         case COMMENT_ERROR:
             fprintf(stderr, "\x1B[31m" "%s: error at line %d: unterminated comment\n",
                 getprogname(), yylineno);
+            yychar = YYEOF;
             break;
         default:
             fprintf(stderr, "\x1B[31m" "%s: error at line %d: %s\n",
