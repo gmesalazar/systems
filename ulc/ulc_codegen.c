@@ -4,11 +4,14 @@
 #include "ulc_vm.h"
 #include "util.h"
 
-static struct instruction section_code[1000];
+/* memory to hold code while it's generated */
+static struct instruction section_code[SEC_CODE_SZ];
 
+/* keep track of data area allocation */
 static int data_offset = 0;
+/* keep track of code area allocation */
 static int code_offset = 0;
-
+/* keep track of the entrypoint's offset */
 static int main_offset = 0;
 
 int
@@ -48,7 +51,7 @@ dump_code()
 {
 	int i;
 	for(i = 0; i < code_offset; i++)
-		printf("%d\t%s\t%d\n", i, op_names[section_code[i].op], section_code[i].arg);
+		printf("%d\t%s\t%ld\n", i, op_names[section_code[i].op], section_code[i].arg);
 }
 
 void

@@ -1,6 +1,9 @@
 #ifndef ulc_vm_h
 #define ulc_vm_h
 
+#define SEC_CODE_SZ 2048
+#define SEC_DATA_SZ 4096
+
 /*
  * Opcodes
  */
@@ -46,7 +49,7 @@ extern const char* const op_names[];
 /* instruction definition */
 typedef struct instruction {
 	OpCode op;
-	int arg;
+	long arg;
 } Instruction;
 
 #endif

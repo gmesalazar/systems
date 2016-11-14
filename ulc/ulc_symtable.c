@@ -6,14 +6,13 @@
 #include "util.h"
 
 /* pointer to the outermost scope */
-static struct scope *scope_head = NULL;
+static Scope *scope_head = NULL;
+static void free_table(Symbol *head);
 
-void free_table(struct symnode *head);
-
-struct scope *
+Scope *
 push_scope()
 {
-	struct scope *new = calloc(1, sizeof(struct scope));
+	Scope *new = calloc(1, sizeof(Scope));
 	if (!new)
 		fatal("Memory error. Compilation aborted\n");
 	new->next_scope = scope_head;
@@ -24,30 +23,30 @@ push_scope()
 void
 pop_scope()
 {
-	struct scope *aux = scope_head;
+	Scope *aux = scope_head;
 	scope_head = scope_head->next_scope;
 	free_table(aux->symt_head);
 	free(aux);
 }
 
 
-struct symnode*
+Symbol*
 putsymbol(const char *symname, int data_offset)
 {
-	struct symnode *ptr;
-	ptr = calloc(1, sizeof(struct symnode));
-	strlcpy(ptr->name, symname, SYMNAME_MLEN);
+	Symbol *ptr;
+	ptr = calloc(1, sizeof(Symbol));
+	strlcpy(ptr->name, symname, NAME_MLEN);
 	ptr->next_symbol = scope_head->symt_head;
 	ptr->offset = data_offset;
 	scope_head->symt_head = ptr;
 	return ptr;
 }
 
-struct symnode*
+Symbol*
 getsymbol(const char *sym_name, int scope_level)
 {
-	struct scope* scope_aux;
-	struct symnode* symt_aux;
+	Scope* scope_aux;
+	Symbol* symt_aux;
 
 	scope_aux = scope_head;
 	while (scope_aux) {
@@ -68,7 +67,7 @@ getsymbol(const char *sym_name, int scope_level)
 void
 install (const char *symname, int data_offset)
 {
-	struct symnode *sym = getsymbol(symname, 0);
+	Symbol *sym = getsymbol(symname, 0);
 	if (!sym)
 		sym = putsymbol(symname, data_offset);
 	else
@@ -78,23 +77,23 @@ install (const char *symname, int data_offset)
 void
 context_check(OpCode op, const char *symname)
 {
-	struct symnode *symbol = getsymbol(symname, 1);
+	Symbol *symbol = getsymbol(symname, 1);
 	if (symbol == NULL)
 		printf("Undefined symbol: %s\n", symname);
 	else
 		gen_code(op, symbol->offset);
 }
 
-struct symnode*
+Symbol*
 get_head()
 {
 	return scope_head->symt_head;
 }
 
-void
-free_table(struct symnode *head)
+static void
+free_table(Symbol *head)
 {
-	struct symnode *aux;
+	Symbol *aux;
 	if (!head)
 		return;
 	while (head) {

@@ -49,8 +49,8 @@ const char* const op_names[] = {
 };
 
 /* the store */
-static long section_data[1000];
-static Instruction section_code[1000];
+static long section_data[SEC_DATA_SZ];
+static Instruction section_code[SEC_CODE_SZ];
 
 /* registers */
 static int pc = 0;      // the program counter

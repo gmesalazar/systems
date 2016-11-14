@@ -3,26 +3,29 @@
 
 #include "ulc_codegen.h"
 
-#define SYMNAME_MLEN 100
+#define NAME_MLEN 256
 
-struct scope {
-	struct symnode *symt_head;
-	struct scope *next_scope;
+typedef struct symbol Symbol;
+
+struct symbol {
+	char name[NAME_MLEN];
+	Symbol* next_symbol;
+	int offset;
 };
 
-struct symnode
-{
-	char name[SYMNAME_MLEN];
-	int offset;
-	struct symnode* next_symbol;
+typedef struct scope Scope;
+
+struct scope {
+	Symbol *symt_head;
+	Scope *next_scope;
 };
 
 void install(const char*, int);
 void context_check(OpCode, const char*);
-struct symnode* getsymbol(const char*, int);
-struct symnode* get_head();
+Symbol* getsymbol(const char*, int);
+Symbol* get_head();
 
 void pop_scope();
-struct scope* push_scope();
+Scope* push_scope();
 
 #endif
