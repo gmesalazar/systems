@@ -1,3 +1,8 @@
+/*
+ * Test conditional ternary operator
+ *  read M, N, and print max(M, N) using the ternary operator
+ *  ?:
+ */
 main {
 	number a, b, c;
 	read a, b;

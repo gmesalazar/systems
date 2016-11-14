@@ -1,3 +1,6 @@
+/* 
+ * Test argument passing
+ */
 number f(number a, number b) {
 	write a;
 	write b;

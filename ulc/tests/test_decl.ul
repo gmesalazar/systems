@@ -1,3 +1,7 @@
+/*
+ * Test declaration and read
+ *  declare a number, read something in it, and print it back
+ */
 main {
 	number a;
 	read a;

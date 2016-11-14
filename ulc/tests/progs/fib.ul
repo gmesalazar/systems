@@ -1,3 +1,7 @@
+/* 
+ * Fibonacci:
+ *  read N and print the fibonacci sequence up to N
+ */
 main {
 	number prim = 0, seg = 1, next, max;
 	read max;
