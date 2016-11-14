@@ -2,8 +2,8 @@ PROG      := ulc
 
 PARSER    := $(PROG)_parser
 SCANNER   := $(PROG)_scanner
-SYMTABLE  := $(PROG)_symtable
 CODEGEN   := $(PROG)_codegen
+ENVIRON   := $(PROG)_environ
 COMP      := $(PROG)_comp
 VM        := $(PROG)_vm
 
@@ -12,7 +12,7 @@ ULC_I     := $(PROG)i
 
 UTIL      := util
 
-OBJ       := $(PARSER) $(SCANNER) $(SYMTABLE) $(CODEGEN) $(UTIL) $(VM)
+OBJ       := $(PARSER) $(SCANNER) $(ENVIRON) $(CODEGEN) $(UTIL) $(VM)
 
 CFLAGS    += -Wall -I../include -g
 
@@ -30,7 +30,7 @@ $(ULC_I): $(VM).c $(UTIL).o
 
 $(PARSER).o:   $(PARSER).c
 $(SCANNER).o:  $(SCANNER).c
-$(SYMTABLE).o: $(SYMTABLE).c
+$(ENVIRON).o: $(ENVIRON).c
 $(CODEGEN).o:  $(CODEGEN).c
 $(UTIL).o:     ../lib/$(UTIL).c
 $(VM).o:       $(VM).c
@@ -50,4 +50,4 @@ clean:
 	rm -rf tests/*.ulb
 	rm -rf tests/progs/*.ulb
 
-.PHONY: clean 
+.PHONY: clean

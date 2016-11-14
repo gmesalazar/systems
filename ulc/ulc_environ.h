@@ -1,5 +1,7 @@
-#ifndef ulc_symtable_h
-#define ulc_symtable_h
+#ifndef ulc_environ_h
+#define ulc_environ_h
+
+#include <stdbool.h>
 
 #include "ulc_codegen.h"
 
@@ -20,10 +22,9 @@ struct scope {
 	Scope *next_scope;
 };
 
-void install(const char*, long);
 void context_check(OpCode, const char*);
-Symbol* getsymbol(const char*, int);
-Symbol* get_head();
+Symbol* add_symbol(const char*, long);
+Symbol* get_symbol(const char*, bool);
 
 void pop_scope();
 Scope* push_scope();

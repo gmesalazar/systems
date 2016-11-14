@@ -1,7 +1,7 @@
 #ifndef ulc_object_h
 #define ulc_object_h
 
-#include "ulc_symtable.h"
+#include "ulc_environ.h"
 
 typedef struct function {
 	char id[NAME_MLEN];

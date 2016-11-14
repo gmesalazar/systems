@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ulc_environ.h"
 #include "ulc_object.h"
 #include "ulc_parser.h"
-#include "ulc_symtable.h"
 #include "../include/util.h"
 
 #define YY_NO_INPUT

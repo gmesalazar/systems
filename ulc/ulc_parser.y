@@ -5,13 +5,20 @@
 #include <stdlib.h>
 
 #include "ulc_codegen.h"
+#include "ulc_environ.h"
 #include "ulc_object.h"
-#include "ulc_symtable.h"
 #include "ulc_vm.h"
 
 extern int yylex();
 extern void yyerror(const char *s);
 extern int yylineno;
+
+#define check_gen_code(opcode, name) {                        \
+        Symbol *s = NULL;                                     \
+        if(!(s = get_symbol(name, true)))                     \
+            fprintf(stderr, "Undefined symbol: %s\n", name);  \
+        else                                                  \
+            gen_code(opcode, s->offset);}
 
 %}
 
@@ -58,20 +65,20 @@ prog:
 ;
 
 funcvardecl:
-             type TK_NAME {install($2, alloc_d());} vardecl TK_SCOLON funcvardecl
-           | type TK_NAME TK_ASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl TK_SCOLON funcvardecl
+             type TK_NAME {add_symbol($2, alloc_d());} vardecl TK_SCOLON funcvardecl
+           | type TK_NAME TK_ASSIGN expr {add_symbol($2, alloc_d()); check_gen_code(STORE, $2);} vardecl TK_SCOLON funcvardecl
            | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON funcvardecl
-           | type TK_NAME TK_LPAREN {install($2, gen_label());} paramlist TK_RPAREN block funcvardecl
+           | type TK_NAME TK_LPAREN {add_symbol($2, gen_label());} paramlist TK_RPAREN block funcvardecl
            |
 ;
 
 progdecl:
-          TK_MAIN {install($1, gen_label()); set_main_offset(gen_label());} block
+          TK_MAIN {add_symbol($1, gen_label()); set_main_offset(gen_label());} block
 ;
 
 vardecl:
-          TK_COMMA TK_NAME {install($2, alloc_d());} vardecl
-        | TK_COMMA TK_NAME TK_ASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl
+          TK_COMMA TK_NAME {add_symbol($2, alloc_d());} vardecl
+        | TK_COMMA TK_NAME TK_ASSIGN expr {add_symbol($2, alloc_d()); check_gen_code(STORE, $2);} vardecl
         | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl
         |
 ;
@@ -82,8 +89,8 @@ paramlist:
 ;
 
 paramlistcont:
-               type TK_NAME {install($2, alloc_d()); context_check(STORE_ARG, $2);}
-             | type TK_NAME TK_COMMA {install($2, alloc_d()); context_check(STORE_ARG, $2);} paramlistcont
+               type TK_NAME {add_symbol($2, alloc_d()); check_gen_code(STORE_ARG, $2);}
+             | type TK_NAME TK_COMMA {add_symbol($2, alloc_d()); check_gen_code(STORE_ARG, $2);} paramlistcont
              | type TK_NAME TK_LBRACK TK_RBRACK
              | type TK_NAME TK_LBRACK TK_RBRACK TK_COMMA paramlistcont
 ;
@@ -94,9 +101,9 @@ block:
 ;
 
 vardecllist:
-             type TK_NAME {install($2, alloc_d());} vardecl TK_SCOLON vardecllist
-           | type TK_NAME TK_ASSIGN expr {install($2, alloc_d()); context_check(STORE, $2);} vardecl TK_SCOLON vardecllist
-           | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON vardecllist {install($2, alloc_d());}
+             type TK_NAME {add_symbol($2, alloc_d());} vardecl TK_SCOLON vardecllist
+           | type TK_NAME TK_ASSIGN expr {add_symbol($2, alloc_d()); check_gen_code(STORE, $2);} vardecl TK_SCOLON vardecllist
+           | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON vardecllist {add_symbol($2, alloc_d());}
            |
 ;
 
@@ -189,13 +196,13 @@ unexpr:
 ;
 
 lvalexpr:
-          TK_NAME {$<litnum>$ = getsymbol($1, 1)->offset;}
+          TK_NAME {$<litnum>$ = get_symbol($1, 1)->offset;}
         | TK_NAME TK_LBRACK expr TK_RBRACK
 ;
 
 primexpr:
-          TK_NAME {context_check(LD_VAR, $1);}
-        | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TK_RPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.ret, LD_INT, gen_label());}
+          TK_NAME {check_gen_code(LD_VAR, $1);}
+        | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TK_RPAREN {check_gen_code(CALL, $<func>3.id); back_patch($<func>3.ret, LD_INT, gen_label());}
         | TK_NAME TK_LBRACK expr TK_RBRACK
         | TK_LPAREN expr TK_RPAREN
         | TK_LIT_NUM {gen_code(LD_INT, $1);}
