@@ -33,14 +33,14 @@ gen_label()
 }
 
 void
-gen_code(OpCode op, int arg)
+gen_code(OpCode op, long arg)
 {
 	section_code[code_offset].op = op;
 	section_code[code_offset++].arg = arg;
 }
 
 void
-back_patch(int addr, OpCode op, int arg)
+back_patch(int addr, OpCode op, long arg)
 {
 	section_code[addr].op = op;
 	section_code[addr].arg = arg;

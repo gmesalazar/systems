@@ -10,7 +10,7 @@ typedef struct symbol Symbol;
 struct symbol {
 	char name[NAME_MLEN];
 	Symbol* next_symbol;
-	int offset;
+	long offset;
 };
 
 typedef struct scope Scope;
@@ -20,7 +20,7 @@ struct scope {
 	Scope *next_scope;
 };
 
-void install(const char*, int);
+void install(const char*, long);
 void context_check(OpCode, const char*);
 Symbol* getsymbol(const char*, int);
 Symbol* get_head();

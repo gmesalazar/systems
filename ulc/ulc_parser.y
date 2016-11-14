@@ -4,8 +4,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "ulc_symtable.h"
 #include "ulc_codegen.h"
+#include "ulc_object.h"
+#include "ulc_symtable.h"
 #include "ulc_vm.h"
 
 extern int yylex();
@@ -16,23 +17,20 @@ extern int yylineno;
 
 %union{
     char id[100];
-    char *litstr;
-    long int litnum;
-    struct {
-        int addr_goto;
-        int addr_goto_false;
-    } lbls;
-    struct {
-        char id[100];
-        int addr_ret;
-    } func;
+    long litnum;
+    TType     type;
+    TValue    litv;
+    TJmpLabel lbls;
+    TFunction func;
 }
 
-%token <id> TK_MAIN
-%token <id> TK_NAME
-%token TK_TYPE_NUM TK_TYPE_STR
+%type <type> type
+
+%token <id>     TK_MAIN
+%token <id>     TK_NAME
+%token <type>   TK_TYPE_NUM TK_TYPE_STR
 %token <litnum> TK_LIT_NUM
-%token <litstr> TK_LIT_STR
+%token <litnum> TK_LIT_STR
 %token TK_COMMA TK_SCOLON
 %token TK_LBRACK TK_RBRACK
 %token TK_LPAREN TK_RPAREN
@@ -103,8 +101,8 @@ vardecllist:
 ;
 
 type:
-      TK_TYPE_NUM
-    | TK_TYPE_STR
+      TK_TYPE_NUM {$$ = TYPE_NUMBER;}
+    | TK_TYPE_STR {$$ = TYPE_STRING;}
 ;
 
 commlist:
@@ -197,11 +195,11 @@ lvalexpr:
 
 primexpr:
           TK_NAME {context_check(LD_VAR, $1);}
-        | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.addr_ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TK_RPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.addr_ret, LD_INT, gen_label());}
+        | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TK_RPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.ret, LD_INT, gen_label());}
         | TK_NAME TK_LBRACK expr TK_RBRACK
         | TK_LPAREN expr TK_RPAREN
         | TK_LIT_NUM {gen_code(LD_INT, $1);}
-        | TK_LIT_STR
+        | TK_LIT_STR {gen_code(LD_INT, (long)strdup((char *) $1));}
 ;
 
 exprlist:

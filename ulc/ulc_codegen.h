@@ -6,8 +6,8 @@
 int alloc_d();
 int alloc_c();
 int gen_label();
-void gen_code(OpCode, int);
-void back_patch(int, OpCode, int);
+void gen_code(OpCode, long);
+void back_patch(int, OpCode, long);
 void dump_code();
 void dump_bcodes(const char*);
 void set_main_offset(int);

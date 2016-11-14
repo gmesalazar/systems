@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ulc_object.h"
 #include "ulc_parser.h"
 #include "ulc_symtable.h"
 #include "../include/util.h"
@@ -58,7 +59,7 @@ L	[a-zA-Z]
 "!"                 {return TK_NEG;}
 
 {D}+                {yylval.litnum = atol(yytext); return TK_LIT_NUM;}
-\"(\\.|[^\\"\n])*\" {yylval.litstr = strdup(yytext); return TK_LIT_STR;}
+\"(\\.|[^\\"\n])*\" {yylval.litnum = (long) strdup(yytext); return TK_LIT_STR;}
 {L}({D}|{L})*       {strlcpy(yylval.id, yytext, NAME_MLEN); return TK_NAME;}
 .                   {}
 

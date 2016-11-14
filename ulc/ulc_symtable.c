@@ -31,7 +31,7 @@ pop_scope()
 
 
 Symbol*
-putsymbol(const char *symname, int data_offset)
+putsymbol(const char *symname, long data_offset)
 {
 	Symbol *ptr;
 	ptr = calloc(1, sizeof(Symbol));
@@ -65,7 +65,7 @@ getsymbol(const char *sym_name, int scope_level)
 }
 
 void
-install (const char *symname, int data_offset)
+install (const char *symname, long data_offset)
 {
 	Symbol *sym = getsymbol(symname, 0);
 	if (!sym)
