@@ -24,7 +24,7 @@ L	[a-zA-Z]
 [ \t\n]+            ;
 "main"              {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TK_MAIN;}
 "number"            {return TK_TYPE_NUM;}
-"char"              {return TK_TYPE_CHR;}
+"string"            {return TK_TYPE_STR;}
 ";"                 {return TK_SCOLON;}
 ","                 {return TK_COMMA;}
 "["                 {return TK_LBRACK;}
@@ -56,10 +56,10 @@ L	[a-zA-Z]
 "/"                 {return TK_DIV;}
 "%"                 {return TK_MOD;}
 "!"                 {return TK_NEG;}
+
 {D}+                {yylval.litnum = atol(yytext); return TK_LIT_NUM;}
-'(\\.|[^\\'])+'     {yylval.litchar = yytext[0]; return TK_LIT_CHR;}
+\"(\\.|[^\\"\n])*\" {yylval.litstr = strdup(yytext); return TK_LIT_STR;}
 {L}({D}|{L})*       {strlcpy(yylval.id, yytext, SYMNAME_MLEN); return TK_NAME;}
-\"(\\.|[^\\"])*\"   {yylval.litstr = strdup(yytext); return TK_LIT_STR;}
 .                   {}
 
 <INITIAL>"/*"       {BEGIN(COMMENT);}

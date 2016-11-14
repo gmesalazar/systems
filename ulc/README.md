@@ -125,8 +125,8 @@ PrimExpr: IDENTIFIER
         | IDENTIFIER '(' ExprList ')'
         | IDENTIFIER '[' Expr ']'
         | '(' Expr ')'
-        | CHAR
         | NUMBER
+        | STRING
 
 ExprList: AssignExpr
         | ExprList ',' AssignExpr

@@ -16,7 +16,6 @@ extern int yylineno;
 
 %union{
     char id[100];
-    char litchar;
     char *litstr;
     long int litnum;
     struct {
@@ -31,9 +30,8 @@ extern int yylineno;
 
 %token <id> TK_MAIN
 %token <id> TK_NAME
-%token TK_TYPE_NUM TK_TYPE_CHR
+%token TK_TYPE_NUM TK_TYPE_STR
 %token <litnum> TK_LIT_NUM
-%token <litchar> TK_LIT_CHR
 %token <litstr> TK_LIT_STR
 %token TK_COMMA TK_SCOLON
 %token TK_LBRACK TK_RBRACK
@@ -106,7 +104,7 @@ vardecllist:
 
 type:
       TK_TYPE_NUM
-    | TK_TYPE_CHR
+    | TK_TYPE_STR
 ;
 
 commlist:
@@ -202,8 +200,8 @@ primexpr:
         | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.addr_ret = alloc_c(); gen_code(LD_AR, 0);} exprlist TK_RPAREN {context_check(CALL, $<func>3.id); back_patch($<func>3.addr_ret, LD_INT, gen_label());}
         | TK_NAME TK_LBRACK expr TK_RBRACK
         | TK_LPAREN expr TK_RPAREN
-        | TK_LIT_CHR
         | TK_LIT_NUM {gen_code(LD_INT, $1);}
+        | TK_LIT_STR
 ;
 
 exprlist:
