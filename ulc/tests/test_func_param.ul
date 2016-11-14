@@ -6,6 +6,6 @@ number f(number a, number b) {
 
 main {
 	number r;
-	r = f();
+	r = f(1, 2);
 	write r;
 }
