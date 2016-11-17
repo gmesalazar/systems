@@ -8,6 +8,7 @@
 #include "ulc_environ.h"
 #include "ulc_object.h"
 #include "ulc_vm.h"
+#include "util.h"
 
 extern int yylex();
 extern void yyerror(const char *s);
@@ -222,12 +223,12 @@ yyerror(const char *s)
 {
     switch(yychar) {
         case COMMENT_ERROR:
-            fprintf(stderr, "\x1B[31m" "%s: error at line %d: unterminated comment\n",
+            fprintf(stderr, "%s:" KRED " error" KNRM " at line %d: unterminated comment\n",
                 getprogname(), yylineno);
             yychar = YYEOF;
             break;
         default:
-            fprintf(stderr, "\x1B[31m" "%s: error at line %d: %s\n",
+            fprintf(stderr, "%s:" KRED " error" KNRM " at line %d: %s\n",
                 getprogname(), yylineno, s);
             break;
     }
