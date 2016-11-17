@@ -15,35 +15,42 @@ static int code_offset = 0;
 static int main_offset = 0;
 
 int
-alloc_d()
+alloc_data()
 {
 	return data_offset++;
 }
 
 int
-alloc_c()
+alloc_code()
 {
 	return code_offset++;
 }
 
 int
-gen_label()
+label_code()
 {
 	return code_offset;
 }
 
+int
+label_data()
+{
+	return data_offset;
+}
+
 void
-gen_code(OpCode op, long arg)
+gen_code(OpCode op, long arg1, long arg2)
 {
 	section_code[code_offset].op = op;
-	section_code[code_offset++].arg = arg;
+	section_code[code_offset].arg1 = arg1;
+	section_code[code_offset++].arg2 = arg2;
 }
 
 void
 back_patch(int addr, OpCode op, long arg)
 {
 	section_code[addr].op = op;
-	section_code[addr].arg = arg;
+	section_code[addr].arg2 = arg;
 }
 
 void
@@ -51,7 +58,8 @@ dump_code()
 {
 	int i;
 	for(i = 0; i < code_offset; i++)
-		printf("%d\t%s\t%ld\n", i, op_names[section_code[i].op], section_code[i].arg);
+		printf("%d\t%s\t%ld %ld\n", i, op_names[section_code[i].op],
+				section_code[i].arg1, section_code[i].arg2);
 }
 
 void
@@ -62,10 +70,12 @@ dump_bcodes(const char *fname)
 		fatal("Could not open bytecodes file\n");
 
 	section_code[code_offset].op = END;
-	section_code[code_offset++].arg = data_offset;
+	section_code[code_offset].arg1 = 0;
+	section_code[code_offset++].arg2 = data_offset;
 
 	section_code[code_offset].op = END;
-	section_code[code_offset].arg = main_offset;
+	section_code[code_offset].arg1 = 0;
+	section_code[code_offset].arg2 = main_offset;
 
 	fwrite(section_code, sizeof(Instruction), code_offset + 1, fd);
 	fclose(fd);

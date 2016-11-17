@@ -49,7 +49,8 @@ extern const char* const op_names[];
 /* instruction definition */
 typedef struct instruction {
 	OpCode op;
-	long arg;
+	long arg1;
+	long arg2;
 } Instruction;
 
 #endif

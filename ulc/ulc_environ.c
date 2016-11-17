@@ -20,11 +20,12 @@ Scope*
  * Push a new scope; called when entering
  * a scoped block
  */
-push_scope()
+push_scope(int base)
 {
 	Scope *new = calloc(1, sizeof(Scope));
 	if (!new)
 		fatal("Memory error. Compilation aborted\n");
+	new->base = base;
 	new->next_scope = scope_head;
 	scope_head = new;
 	return new;
@@ -83,13 +84,23 @@ get_symbol(const char *sym_name, bool recurse)
 }
 
 static Symbol*
-add_symbol_aux(const char *symname, long data_offset)
+add_symbol_aux(const char *symname, Symkind kind, long addr)
 {
 	Symbol *ptr;
 	ptr = calloc(1, sizeof(Symbol));
 	strlcpy(ptr->name, symname, NAME_MLEN);
 	ptr->next_symbol = scope_head->symt_head;
-	ptr->offset = data_offset;
+	switch(kind) {
+		case Sym_Data:
+			ptr->base = scope_head->base;
+			ptr->offset = addr - scope_head->base;
+			break;
+		case Sym_Func:
+			ptr->base = 0;
+			ptr->offset = addr;
+			break;
+	}
+	ptr->kind = kind;
 	scope_head->symt_head = ptr;
 	return ptr;
 }
@@ -101,11 +112,11 @@ Symbol*
  * exist; only checks the current scope, that is, the new
  * symbol shadows existing symbols with the same name
  */
-add_symbol(const char *symname, long data_offset)
+add_symbol(const char *symname, Symkind kind, long addr)
 {
 	Symbol *sym = NULL;
 	if (!(sym = get_symbol(symname, false)))
-		sym = add_symbol_aux(symname, data_offset);
+		sym = add_symbol_aux(symname, kind, addr);
 	else
 		printf("%s is already defined\n", symname);
 	return sym;

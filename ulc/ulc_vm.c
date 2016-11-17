@@ -72,7 +72,7 @@ fetch_exec_cycle()
 				break;
 			case READ_INT:
 				// read an int into an address in the current frame
-				scanf("%ld", section_data + ar + ir.arg);
+				scanf("%ld", section_data + ir.arg1 + ir.arg2);
 				break;
 			case WRITE_INT:
 				// write an int which is on the top of the stack
@@ -80,30 +80,31 @@ fetch_exec_cycle()
 				break;
 			case STORE:
 				// store the top of the stack into an address
-				section_data[ir.arg] = section_data[sp--];
+				section_data[ir.arg1 + ir.arg2] = section_data[sp--];
 				break;
 			case STORE_ARG:
-				section_data[ir.arg] = section_data[++fp];
+				section_data[ir.arg1 + ir.arg2] = section_data[++fp];
 				break;
 			case GOTO_FALSE:
 				// jump to an address if the top of the stack is falsey
 				if (section_data[sp--] == 0)
-					pc = ir.arg;
+					pc = ir.arg2;
 				break;
 			case GOTO:
 				// jump to an address
-				pc = ir.arg;
+				pc = ir.arg2;
 				break;
+			//TODO: remove DATA
 			case DATA:
-				sp = sp + ir.arg;
+				sp = sp + ir.arg2;
 				break;
 			case LD_INT:
 				// pushes an int onto the stack
-				section_data[++sp] = ir.arg;
+				section_data[++sp] = ir.arg2;
 				break;
 			case LD_VAR:
 				// pushes the value of a variable onto the stack
-				section_data[++sp] = section_data[ar + ir.arg];
+				section_data[++sp] = section_data[ir.arg1 + ir.arg2];
 				break;
 			case LD_AR:
 				fp = ar = sp + 1;
@@ -184,7 +185,7 @@ fetch_exec_cycle()
 				break;
 			case CALL:
 				// set up registers for function call
-				pc = ir.arg;
+				pc = ir.arg2;
 				break;
 			case RET:
 				sp = ar;
@@ -224,10 +225,10 @@ int main (int argc, char **argv)
 	}
 
 	// first END instruction contains the stack top
-	sp = instr.arg;
+	sp = instr.arg2;
 	// second END instruction contains the entry point pointer
 	fread(&instr, sizeof(Instruction), 1, fin);
-	pc = instr.arg;
+	pc = instr.arg2;
 
 	fclose(fin);
 	fetch_exec_cycle();

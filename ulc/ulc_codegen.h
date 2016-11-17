@@ -3,10 +3,12 @@
 
 #include "ulc_vm.h"
 
-int alloc_d();
-int alloc_c();
-int gen_label();
-void gen_code(OpCode, long);
+int alloc_data();
+int alloc_code();
+int label_data();
+int label_code();
+
+void gen_code(OpCode, long, long);
 void back_patch(int, OpCode, long);
 void dump_code();
 void dump_bcodes(const char*);
