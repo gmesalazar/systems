@@ -1,8 +1,8 @@
 main {
-	number x = 20;
+	data x = 20;
 
 	if (1) {
-		number a;
+		data a;
 		write x;
 		read a;
 		write a;

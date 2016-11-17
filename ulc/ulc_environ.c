@@ -25,8 +25,8 @@ push_scope(int base)
 	Scope *new = calloc(1, sizeof(Scope));
 	if (!new)
 		fatal("Memory error. Compilation aborted\n");
-	new->base = base;
-	new->next_scope = scope_head;
+	new->base = base; // the scope base address
+	new->next_scope = scope_head; // the next visible scope
 	scope_head = new;
 	return new;
 }
@@ -53,8 +53,8 @@ pop_scope()
 {
 	Scope *scope = scope_head;
 	scope_head = scope_head->next_scope;
-	pop_scope_aux(scope->symt_head);
-	free(scope);
+	pop_scope_aux(scope->symt_head); // free scope internal data
+	free(scope); // free the scope itself
 }
 
 Symbol*
@@ -76,9 +76,8 @@ get_symbol(const char *sym_name, bool recurse)
 			symt_aux = symt_aux->next_symbol;
 		}
 		scope_aux = scope_aux->next_scope;
-
-		if (!recurse)
-			break;
+		if (!recurse) // check only current scope or check outer
+			break;    // scopes as well?
 	}
 	return NULL;
 }
@@ -86,17 +85,16 @@ get_symbol(const char *sym_name, bool recurse)
 static Symbol*
 add_symbol_aux(const char *symname, Symkind kind, long addr)
 {
-	Symbol *ptr;
-	ptr = calloc(1, sizeof(Symbol));
-	strlcpy(ptr->name, symname, NAME_MLEN);
-	ptr->next_symbol = scope_head->symt_head;
-	switch(kind) {
-		case Sym_Data:
+	Symbol *ptr = calloc(1, sizeof(Symbol));
+	strlcpy(ptr->name, symname, NAME_MLEN); // the symbol name
+	ptr->next_symbol = scope_head->symt_head; // the next symbol
+	switch(kind) { // what kind of symbol is that?
+		case Sym_Data: // variable
 			ptr->base = scope_head->base;
 			ptr->offset = addr - scope_head->base;
 			break;
-		case Sym_Func:
-			ptr->base = 0;
+		case Sym_Func: // function
+			ptr->base = scope_head->base;
 			ptr->offset = addr;
 			break;
 	}

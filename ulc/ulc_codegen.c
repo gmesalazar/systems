@@ -57,8 +57,9 @@ void
 dump_code()
 {
 	int i;
+	printf("%-8s%-10s%-5s%-5s\n", "Opcode", "Name", "Arg1", "Arg2");
 	for(i = 0; i < code_offset; i++)
-		printf("%d\t%s\t%ld %ld\n", i, op_names[section_code[i].op],
+		printf("%-8d%-10s%-5ld %-5ld\n", i, op_names[section_code[i].op],
 				section_code[i].arg1, section_code[i].arg2);
 }
 

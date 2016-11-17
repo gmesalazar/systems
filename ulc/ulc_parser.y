@@ -32,11 +32,10 @@ extern int yylineno;
     TFunction func;
 }
 
-%type <type> type
-
-%token <id>     TK_MAIN
-%token <id>     TK_NAME
-%token <type>   TK_TYPE_NUM TK_TYPE_STR
+%token <id> TK_MAIN
+%token <id> TK_NAME
+%token <type> TK_DATA
+%token <type> TK_FUNC
 %token <litnum> TK_LIT_NUM
 %token <litnum> TK_LIT_STR
 %token TK_COMMA TK_SCOLON
@@ -62,55 +61,69 @@ extern int yylineno;
 %%
 
 prog:
-     {push_scope(label_data());} funcvardecl progdecl {gen_code(HALT, 0, 0); pop_scope(); YYACCEPT;}
+     {push_scope(label_data());} funcvardecl progdecl {gen_code(HLT, 0, 0); pop_scope(); YYACCEPT;}
 ;
 
-funcvardecl:
-             type TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl TK_SCOLON funcvardecl
-           | type TK_NAME TK_ASSIGN expr {add_symbol($2, Sym_Data, alloc_data()); check_gen_code(STORE, $2);} vardecl TK_SCOLON funcvardecl
-           | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON funcvardecl
-           | type TK_NAME TK_LPAREN {add_symbol($2, Sym_Func, label_code());} paramlist TK_RPAREN block funcvardecl
-           |
+funcvardecl: /* empty or */
+           | TK_DATA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl TK_SCOLON funcvardecl
+           | TK_DATA TK_NAME TK_ASSIGN expr {
+                add_symbol($2, Sym_Data, alloc_data());
+                check_gen_code(STO, $2);
+             } vardecl TK_SCOLON funcvardecl
+             /* TODO */
+           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON funcvardecl
+           | TK_NAME TK_LPAREN {
+                add_symbol($1, Sym_Func, label_code());
+                push_scope(label_data()); // enter new scope before parameters decl
+             } paramlist TK_RPAREN block {pop_scope();} funcvardecl
 ;
 
 progdecl:
           TK_MAIN {add_symbol($1, Sym_Func, label_code()); set_main_offset(label_code());} block
 ;
 
-vardecl:
-          TK_COMMA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl
-        | TK_COMMA TK_NAME TK_ASSIGN expr {add_symbol($2, Sym_Data, alloc_data()); check_gen_code(STORE, $2);} vardecl
-        | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl
-        |
+vardecl: /* empty or */
+       | TK_COMMA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl
+       | TK_COMMA TK_NAME TK_ASSIGN expr {
+            add_symbol($2, Sym_Data, alloc_data());
+            check_gen_code(STO, $2);
+         } vardecl
+         /* TODO */
+       | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl
 ;
 
-paramlist:
-           paramlistcont
-         |
+paramlist: /* empty or */
+         | paramlistcont
 ;
 
 paramlistcont:
-               type TK_NAME {add_symbol($2, Sym_Data, alloc_data()); check_gen_code(STORE_ARG, $2);}
-             | type TK_NAME TK_COMMA {add_symbol($2, Sym_Data, alloc_data()); check_gen_code(STORE_ARG, $2);} paramlistcont
-             | type TK_NAME TK_LBRACK TK_RBRACK
-             | type TK_NAME TK_LBRACK TK_RBRACK TK_COMMA paramlistcont
+               TK_DATA TK_NAME {
+                  add_symbol($2, Sym_Data, alloc_data());
+                  check_gen_code(STO, $2);
+               }
+             | TK_DATA TK_NAME TK_COMMA {
+                  add_symbol($2, Sym_Data, alloc_data());
+                  check_gen_code(STO, $2);
+               } paramlistcont
+               /* TODO */
+             | TK_DATA TK_NAME TK_LBRACK TK_RBRACK
+             | TK_DATA TK_NAME TK_LBRACK TK_RBRACK TK_COMMA paramlistcont
 ;
 
 block:
-       TK_LBRACE {push_scope(label_data());} vardecllist commlist TK_RBRACE {pop_scope();}
+       TK_LBRACE vardecllist commlist TK_RBRACE
      | TK_LBRACE TK_RBRACE
 ;
 
-vardecllist:
-             type TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl TK_SCOLON vardecllist
-           | type TK_NAME TK_ASSIGN expr {add_symbol($2, Sym_Data, alloc_data()); check_gen_code(STORE, $2);} vardecl TK_SCOLON vardecllist
-           | type TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON vardecllist {add_symbol($2, Sym_Data, alloc_data());}
-           |
-;
-
-type:
-      TK_TYPE_NUM {$$ = TYPE_NUMBER;}
-    | TK_TYPE_STR {$$ = TYPE_STRING;}
+vardecllist: /* empty or */
+           | TK_DATA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl TK_SCOLON vardecllist
+           | TK_DATA TK_NAME TK_ASSIGN expr {
+                add_symbol($2, Sym_Data, alloc_data());
+                check_gen_code(STO, $2);
+             } vardecl TK_SCOLON vardecllist
+           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON vardecllist {
+                add_symbol($2, Sym_Data, alloc_data());
+             }
 ;
 
 commlist:
@@ -122,35 +135,41 @@ comm:
        TK_SCOLON
      | expr TK_SCOLON
      | TK_RETURN expr TK_SCOLON {gen_code(RET, 0, 0);}
-     | TK_READ lvalexpr {check_gen_code(READ_INT, $<id>2);} readvars TK_SCOLON
-     | TK_WRITE expr TK_SCOLON {gen_code(WRITE_INT, 0, 0);}
-     | TK_WRITE TK_LIT_STR TK_SCOLON
+     | TK_READ lvalexpr {check_gen_code(IN, $<id>2);} readvars TK_SCOLON
+     | TK_WRITE expr TK_SCOLON {gen_code(OUT, 0, 0);}
      | ifstmt
-     | ifstmt TK_ELSE comm {back_patch($<lbls>$.addr_goto, GOTO, label_code());}
-     | TK_WHILE TK_LPAREN {$1.addr_goto = label_code();} expr {$1.addr_goto_false = alloc_code();} TK_RPAREN comm {gen_code(GOTO, 0, $1.addr_goto);back_patch($1.addr_goto_false, GOTO_FALSE, label_code()); }
+     | ifstmt TK_ELSE comm {back_patch($<lbls>$.addr_goto, JMP, label_code());}
+     | TK_WHILE TK_LPAREN {$1.addr_goto = label_code();} expr {$1.addr_goto_false = alloc_code();} TK_RPAREN comm {gen_code(JMP, 0, $1.addr_goto);back_patch($1.addr_goto_false, JMPZ, label_code()); }
      | block
 ;
 
-readvars:
-          TK_COMMA lvalexpr readvars {gen_code(READ_INT, 0, $<litnum>2);}
-        |
+readvars: /* empty or */
+        | TK_COMMA lvalexpr readvars {check_gen_code(IN, $<id>2);}
 ;
 
 ifstmt:
-        TK_IF TK_LPAREN expr TK_RPAREN {$1.addr_goto_false = alloc_code();} comm {$1.addr_goto = alloc_code(); $<lbls>$ = $1; back_patch($1.addr_goto_false, GOTO_FALSE, label_code()); back_patch($1.addr_goto, GOTO, label_code());}
+        TK_IF TK_LPAREN expr TK_RPAREN {$1.addr_goto_false = alloc_code();} comm {$1.addr_goto = alloc_code(); $<lbls>$ = $1; back_patch($1.addr_goto_false, JMPZ, label_code()); back_patch($1.addr_goto, JMP, label_code());}
 ;
 
 expr:
       assignexpr
+    | TK_READ {gen_code(IN, -1, 0);}
 ;
 
 assignexpr: condexpr
-          | lvalexpr TK_ASSIGN assignexpr {check_gen_code(STORE, $<id>1);}
+          | lvalexpr TK_ASSIGN assignexpr {check_gen_code(STO, $<id>1);}
 ;
 
 condexpr:
            orexpr
-         | orexpr TK_COND_IF {$<lbls>$.addr_goto_false = alloc_code();} expr {$<lbls>$.addr_goto = alloc_code(); back_patch($<lbls>3.addr_goto_false, GOTO_FALSE, label_code());} TK_COND_ELSE condexpr {back_patch($<lbls>5.addr_goto, GOTO, label_code());}
+         | orexpr TK_COND_IF {
+              $<lbls>$.addr_goto_false = alloc_code();
+           } expr {
+              $<lbls>$.addr_goto = alloc_code();
+              back_patch($<lbls>3.addr_goto_false, JMPZ, label_code());
+           } TK_COND_ELSE condexpr {
+              back_patch($<lbls>5.addr_goto, JMP, label_code());
+           }
 ;
 
 orexpr:
@@ -185,7 +204,7 @@ addexpr:
 
 multexpr:
           unexpr
-        | multexpr TK_MULT unexpr {gen_code(MULT, 0, 0);}
+        | multexpr TK_MULT unexpr {gen_code(MUL, 0, 0);}
         | multexpr TK_DIV unexpr {gen_code(DIV, 0, 0);}
         | multexpr TK_MOD unexpr {gen_code(MOD, 0, 0);}
 ;
@@ -202,12 +221,21 @@ lvalexpr:
 ;
 
 primexpr:
-          TK_NAME {check_gen_code(LD_VAR, $1);}
-        | TK_NAME TK_LPAREN {strlcpy($<func>$.id, $1, 100); $<func>$.ret = alloc_code(); gen_code(LD_AR, 0, 0);} exprlist TK_RPAREN {check_gen_code(CALL, $<func>3.id); back_patch($<func>3.ret, LD_INT, label_code());}
+          TK_NAME {check_gen_code(LODV, $1);}
+          /* function call */
+        | TK_NAME TK_LPAREN {
+            $<func>2.id = strdup($1); // save name
+            $<func>2.ret = alloc_code(); // mark return adderss
+          } exprlist TK_RPAREN {
+            check_gen_code(CALL, $<func>2.id); // call function
+            back_patch($<func>2.ret, LODI, label_code()); // LODI ret addr
+          }
+          /* TODO */
         | TK_NAME TK_LBRACK expr TK_RBRACK
         | TK_LPAREN expr TK_RPAREN
-        | TK_LIT_NUM {gen_code(LD_INT, 0, $1);}
-        | TK_LIT_STR {gen_code(LD_INT, 0, (long)strdup((char *) $1));}
+        | TK_LIT_NUM {gen_code(LODI, 0, $1);}
+          /* TODO */
+        | TK_LIT_STR
 ;
 
 exprlist:

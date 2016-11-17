@@ -1,9 +1,11 @@
 /*
- * Test declaration and read
- *  declare a number, read something in it, and print it back
+ * Test declaration and read; two idioms
  */
 main {
-	number a;
+	/* read some data */
+	data a = read;
+	write a;
+	/* read some more data */
 	read a;
 	write a;
 }

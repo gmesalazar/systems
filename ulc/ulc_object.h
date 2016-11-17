@@ -4,8 +4,8 @@
 #include "ulc_environ.h"
 
 typedef struct function {
-	char id[NAME_MLEN];
-	long ret;
+	char* id;
+	long  ret;
 } TFunction;
 
 typedef struct jmplabel {

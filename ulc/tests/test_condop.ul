@@ -4,8 +4,7 @@
  *  ?:
  */
 main {
-	number a, b, c;
-	read a, b;
+	data a = read, b = read, c;
 	c = a > b ? a : b;
 	write c;
 }

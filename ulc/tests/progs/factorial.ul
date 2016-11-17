@@ -3,14 +3,13 @@
  *  read N and print N!, using a recursive algorithm
  */
 
-number factorial(number n) {
+factorial(data n) {
 	if (n == 0)
 		return 1;
 	return n * factorial(n - 1);
 }
 
 main {
-	number n;
-	read n;
+	data n = read;
 	write factorial(n);
 }

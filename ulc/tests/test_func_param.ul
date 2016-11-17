@@ -1,14 +1,14 @@
 /* 
  * Test argument passing
  */
-number f(number a, number b) {
+f(data a, data b) {
 	write a;
 	write b;
 	return a + b;
 }
 
 main {
-	number r;
+	data r;
 	r = f(1, 2);
 	write r;
 }

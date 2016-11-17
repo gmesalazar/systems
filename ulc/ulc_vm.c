@@ -16,48 +16,45 @@
  * Opcode names array
  */
 const char* const op_names[] = {
-	"HALT",
-	"STORE",
-	"STORE_ARG",
-	"GOTO_FALSE",
-	"GOTO",
+	"HLT",
+	"STO",
+	"JMP",
+	"JMPZ",
 	"CALL",
 	"RET",
-	"DATA",
-	"LD_INT",
-	"LD_VAR",
-	"LD_AR",
-	"IN_INT",
-	"OUT_INT",
+	"LODI",
+	"LODV",
+	"IN",
+	"OUT",
 	"LT",
-	"EQ",
-	"NE",
-	"GT",
 	"LE",
+	"GT",
 	"GE",
+	"EQ",
+	"NEQ",
 	"NEG",
 	"ADD",
 	"SUB",
-	"MULT",
+	"MUL",
 	"DIV",
 	"MOD",
-	"PWR",
+	"POW",
 	"NOT",
 	"AND",
 	"OR",
-	"END"
 };
 
 /* the store */
 static long section_data[SEC_DATA_SZ];
 static Instruction section_code[SEC_CODE_SZ];
 
-/* registers */
-static int pc = 0;      // the program counter
-static int ar = 0;      // the active record
-static int fp = 0;      // the frame pointer
-static int sp = 0;      // the top of the stack
+/* special purpose registers */
+static int pc;      // the program counter
+static int sp;      // the top of the stack
 static Instruction ir;
+
+/* general purpose registers */
+static int r0;
 
 void
 fetch_exec_cycle()
@@ -65,52 +62,63 @@ fetch_exec_cycle()
 	do {
 		ir = section_code[pc++]; // grab our current instruction
 		                         // and increment our program counter
-
 		// what instruction is that?
 		switch (ir.op) {
-			case HALT:
+			case HLT:
 				break;
-			case READ_INT:
-				// read an int into an address in the current frame
-				scanf("%ld", section_data + ir.arg1 + ir.arg2);
-				break;
-			case WRITE_INT:
-				// write an int which is on the top of the stack
-				printf("%ld\n", section_data[sp--]);
-				break;
-			case STORE:
-				// store the top of the stack into an address
+			case STO:
 				section_data[ir.arg1 + ir.arg2] = section_data[sp--];
 				break;
-			case STORE_ARG:
-				section_data[ir.arg1 + ir.arg2] = section_data[++fp];
+			case JMP:
+				pc = ir.arg2;
 				break;
-			case GOTO_FALSE:
-				// jump to an address if the top of the stack is falsey
+			case JMPZ:
 				if (section_data[sp--] == 0)
 					pc = ir.arg2;
 				break;
-			case GOTO:
-				// jump to an address
+			case CALL:
 				pc = ir.arg2;
 				break;
-			//TODO: remove DATA
-			case DATA:
-				sp = sp + ir.arg2;
+			case RET:
+				r0 = section_data[sp--]; // save return value
+				pc = section_data[sp]; // restore pc
+				section_data[sp] = r0; // leave the return value
 				break;
-			case LD_INT:
-				// pushes an int onto the stack
+			case LODI:
 				section_data[++sp] = ir.arg2;
 				break;
-			case LD_VAR:
-				// pushes the value of a variable onto the stack
+			case LODV:
 				section_data[++sp] = section_data[ir.arg1 + ir.arg2];
 				break;
-			case LD_AR:
-				fp = ar = sp + 1;
+			case IN:
+				if (ir.arg1 == -1)
+					scanf("%ld", &section_data[sp]);
+				else
+					scanf("%ld", section_data + ir.arg1 + ir.arg2);
+				break;
+			case OUT:
+				printf("%ld\n", section_data[sp--]);
 				break;
 			case LT:
 				if (section_data[sp - 1] < section_data[sp])
+					section_data[--sp] = 1;
+				else
+					section_data[--sp] = 0;
+				break;
+			case LE:
+				if (section_data[sp - 1] <= section_data[sp])
+					section_data[--sp] = 1;
+				else
+					section_data[--sp] = 0;
+				break;
+			case GT:
+				if (section_data[sp - 1] > section_data[sp])
+					section_data[--sp] = 1;
+				else
+					section_data[--sp] = 0;
+				break;
+			case GE:
+				if (section_data[sp - 1] >= section_data[sp])
 					section_data[--sp] = 1;
 				else
 					section_data[--sp] = 0;
@@ -127,23 +135,8 @@ fetch_exec_cycle()
 				else
 					section_data[--sp] = 0;
 				break;
-			case GT:
-				if (section_data[sp - 1] > section_data[sp])
-					section_data[--sp] = 1;
-				else
-					section_data[--sp] = 0;
-				break;
-			case LE:
-				if (section_data[sp - 1] <= section_data[sp])
-					section_data[--sp] = 1;
-				else
-					section_data[--sp] = 0;
-				break;
-			case GE:
-				if (section_data[sp - 1] >= section_data[sp])
-					section_data[--sp] = 1;
-				else
-					section_data[--sp] = 0;
+			case NEG:
+				section_data[sp] = -section_data[sp];
 				break;
 			case ADD:
 				section_data[sp - 1] = section_data[sp - 1] + section_data[sp];
@@ -153,10 +146,7 @@ fetch_exec_cycle()
 				section_data[sp - 1] = section_data[sp - 1] - section_data[sp];
 				sp--;
 				break;
-			case NEG:
-				section_data[sp] = -section_data[sp];
-				break;
-			case MULT:
+			case MUL:
 				section_data[sp - 1] = section_data[sp - 1] * section_data[sp];
 				sp--;
 				break;
@@ -168,8 +158,8 @@ fetch_exec_cycle()
 				section_data[sp - 1] = section_data[sp - 1] % section_data[sp];
 				sp--;
 				break;
-			case PWD:
-				section_data[sp - 1] = (long) pow(section_data[sp - 1], section_data[sp]);
+			case POW:
+				section_data[sp - 1] = pow(section_data[sp - 1], section_data[sp]);
 				sp--;
 				break;
 			case NOT:
@@ -183,19 +173,10 @@ fetch_exec_cycle()
 				section_data[sp - 1] = section_data[sp - 1] || section_data[sp];
 				sp--;
 				break;
-			case CALL:
-				// set up registers for function call
-				pc = ir.arg2;
-				break;
-			case RET:
-				sp = ar;
-				pc = section_data[sp - 1];
-				section_data[sp - 1] = section_data[sp];
-				break;
 			default:
 				printf("bad instruction: %s", op_names[ir.op]);
 		}
-	} while (ir.op != HALT); // repeat until our program halts
+	} while (ir.op != HLT); // repeat until our program halts
 }
 
 #ifdef VM // are we compiling the interpreter program?

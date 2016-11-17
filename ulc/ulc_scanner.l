@@ -24,8 +24,8 @@ L	[a-zA-Z]
 
 [ \t\n]+            ;
 "main"              {strlcpy(yylval.id, yytext, NAME_MLEN); return TK_MAIN;}
-"number"            {return TK_TYPE_NUM;}
-"string"            {return TK_TYPE_STR;}
+"data"              {return TK_DATA;}
+"func"              {return TK_FUNC;}
 ";"                 {return TK_SCOLON;}
 ","                 {return TK_COMMA;}
 "["                 {return TK_LBRACK;}
