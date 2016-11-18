@@ -51,10 +51,12 @@ static Instruction section_code[SEC_CODE_SZ];
 /* special purpose registers */
 static int pc;      // the program counter
 static int sp;      // the top of the stack
+static int fp;
 static Instruction ir;
 
 /* general purpose registers */
 static int r0;
+static int r1;
 
 void
 fetch_exec_cycle()
@@ -77,12 +79,17 @@ fetch_exec_cycle()
 					pc = ir.arg2;
 				break;
 			case CALL:
+				section_data[++sp] = fp;
+				fp = ir.arg1;
 				pc = ir.arg2;
 				break;
 			case RET:
 				r0 = section_data[sp--]; // save return value
+				r1 = section_data[sp--]; // save old frame pointer
+				sp = fp; // rewind the stack
 				pc = section_data[sp]; // restore pc
 				section_data[sp] = r0; // leave the return value
+				fp = r1; // restore old frame pointer
 				break;
 			case LODI:
 				section_data[++sp] = ir.arg2;
@@ -92,7 +99,7 @@ fetch_exec_cycle()
 				break;
 			case IN:
 				if (ir.arg1 == -1)
-					scanf("%ld", &section_data[sp]);
+					scanf("%ld", section_data + sp);
 				else
 					scanf("%ld", section_data + ir.arg1 + ir.arg2);
 				break;
@@ -206,7 +213,7 @@ int main (int argc, char **argv)
 	}
 
 	// first END instruction contains the stack top
-	sp = instr.arg2;
+	sp = instr.arg2 == 0 ? -1 : sp;
 	// second END instruction contains the entry point pointer
 	fread(&instr, sizeof(Instruction), 1, fin);
 	pc = instr.arg2;

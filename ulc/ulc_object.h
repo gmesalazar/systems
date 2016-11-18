@@ -6,6 +6,7 @@
 typedef struct function {
 	char* id;
 	long  ret;
+	int nl; // number of locals
 } TFunction;
 
 typedef struct jmplabel {

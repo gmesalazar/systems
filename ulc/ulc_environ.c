@@ -20,12 +20,11 @@ Scope*
  * Push a new scope; called when entering
  * a scoped block
  */
-push_scope(int base)
+push_scope()
 {
 	Scope *new = calloc(1, sizeof(Scope));
 	if (!new)
 		fatal("Memory error. Compilation aborted\n");
-	new->base = base; // the scope base address
 	new->next_scope = scope_head; // the next visible scope
 	scope_head = new;
 	return new;
@@ -89,13 +88,11 @@ add_symbol_aux(const char *symname, Symkind kind, long addr)
 	strlcpy(ptr->name, symname, NAME_MLEN); // the symbol name
 	ptr->next_symbol = scope_head->symt_head; // the next symbol
 	switch(kind) { // what kind of symbol is that?
-		case Sym_Data: // variable
-			ptr->base = scope_head->base;
-			ptr->offset = addr - scope_head->base;
-			break;
 		case Sym_Func: // function
-			ptr->base = scope_head->base;
-			ptr->offset = addr;
+			ptr->u.func.nl = 0;
+		case Sym_Local:
+		case Sym_Global: // variable
+			ptr->addr = addr;
 			break;
 	}
 	ptr->kind = kind;

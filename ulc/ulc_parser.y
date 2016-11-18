@@ -14,12 +14,29 @@ extern int yylex();
 extern void yyerror(const char *s);
 extern int yylineno;
 
-#define check_gen_code(opcode, name) {                        \
-        Symbol *s = NULL;                                     \
-        if(!(s = get_symbol(name, true)))                     \
-            fprintf(stderr, "Undefined symbol: %s\n", name);  \
-        else                                                  \
-            gen_code(opcode, s->base, s->offset);}
+// Some scratch area
+static char* name_aux;
+
+//TODO error reporting
+inline static void
+check_gen_code(OpCode opcode, const char *name)
+{
+        Symbol *s = NULL;
+        if(!(s = get_symbol(name, true)))
+            fprintf(stderr, "Undefined symbol: %s\n", name);
+        else {
+            switch(s->kind) {
+                case Sym_Func:
+                    gen_code(opcode, label_data(), s->addr);
+                    break;
+                case Sym_Global:
+                    gen_code(opcode, 0, s->addr);
+                    break;
+                case Sym_Local:
+                    gen_code(opcode, label_data(), s->addr);
+            }
+        }
+}
 
 %}
 
@@ -72,10 +89,10 @@ prog: /* a program is made of...*/
 /* data declaration */
 datadecl: /* empty or */
         | TK_DATA TK_NAME {
-            add_symbol($2, Sym_Data, alloc_data());
+            add_symbol($2, Sym_Global, alloc_data());
           } datadeclcont TK_SCOLON datadecl
         | TK_DATA TK_NAME TK_ASSIGN expr {
-            add_symbol($2, Sym_Data, alloc_data());
+            add_symbol($2, Sym_Global, alloc_data());
             check_gen_code(STO, $2);
           } datadeclcont TK_SCOLON datadecl
           /* TODO */
@@ -83,9 +100,11 @@ datadecl: /* empty or */
 ;
 
 datadeclcont: /* empty or */
-            | TK_COMMA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} datadeclcont
+            | TK_COMMA TK_NAME {
+                add_symbol($2, Sym_Global, alloc_data());
+              } datadeclcont
             | TK_COMMA TK_NAME TK_ASSIGN expr {
-                add_symbol($2, Sym_Data, alloc_data());
+                add_symbol($2, Sym_Global, alloc_data());
                 check_gen_code(STO, $2);
               } datadeclcont
               /* TODO */
@@ -94,7 +113,7 @@ datadeclcont: /* empty or */
 
 /* functions */
 funcdecl: /* empty or */
-        | TK_NAME TK_LPAREN {
+        | TK_NAME {name_aux = $1;} TK_LPAREN {
             add_symbol($1, Sym_Func, label_code());
             push_scope(label_data()); // enter new scope before parameters decl
           } paramlist TK_RPAREN block {pop_scope();} funcdecl
@@ -106,12 +125,12 @@ paramlist: /* empty or */
 
 paramlistcont:
                TK_DATA TK_NAME {
-                  add_symbol($2, Sym_Data, alloc_data());
-                  check_gen_code(STO, $2);
+                  Symbol* s = get_symbol(name_aux, true);
+                  add_symbol($2, Sym_Local, ++s->u.func.nl);
                }
              | TK_DATA TK_NAME TK_COMMA {
-                  add_symbol($2, Sym_Data, alloc_data());
-                  check_gen_code(STO, $2);
+                  Symbol* s = get_symbol(name_aux, true);
+                  add_symbol($2, Sym_Local, ++s->u.func.nl);
                } paramlistcont
                /* TODO */
              | TK_DATA TK_NAME TK_LBRACK TK_RBRACK
@@ -119,23 +138,46 @@ paramlistcont:
 ;
 
 progdecl:
-          TK_MAIN {add_symbol($1, Sym_Func, label_code()); set_main_offset(label_code());} block
+          TK_MAIN {
+            name_aux = $1;
+            add_symbol($1, Sym_Func, label_code());
+            push_scope(label_data());
+            set_main_offset(label_code());
+          } block {pop_scope();}
 ;
 
 block:
-       TK_LBRACE {push_scope(label_data());} vardecllist commlist TK_RBRACE {pop_scope();}
+       TK_LBRACE {push_scope(label_data());} localdata commlist TK_RBRACE {pop_scope();}
      | TK_LBRACE TK_RBRACE
 ;
 
-vardecllist: /* empty or */
-           | TK_DATA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} datadeclcont TK_SCOLON vardecllist
+/* local data declaration */
+localdata: /* empty or */
+           | TK_DATA TK_NAME {
+                 Symbol* s = get_symbol(name_aux, true);
+                 add_symbol($2, Sym_Local, ++s->u.func.nl);
+             } localdatacont TK_SCOLON localdata
            | TK_DATA TK_NAME TK_ASSIGN expr {
-                add_symbol($2, Sym_Data, alloc_data());
+                Symbol* s = get_symbol(name_aux, true);
+                add_symbol($2, Sym_Local, ++s->u.func.nl);
                 check_gen_code(STO, $2);
-             } datadeclcont TK_SCOLON vardecllist
-           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK datadeclcont TK_SCOLON vardecllist {
-                add_symbol($2, Sym_Data, alloc_data());
-             }
+             } localdatacont TK_SCOLON localdata
+             /* TODO */
+           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK localdatacont TK_SCOLON localdata
+;
+
+localdatacont: /* empty or */
+            | TK_COMMA TK_NAME {
+                Symbol* s = get_symbol(name_aux, true);
+                add_symbol($2, Sym_Local, ++s->u.func.nl);
+              } localdatacont
+            | TK_COMMA TK_NAME TK_ASSIGN expr {
+                Symbol* s = get_symbol(name_aux, true);
+                add_symbol($2, Sym_Local, ++s->u.func.nl);
+                check_gen_code(STO, $2);
+              } localdatacont
+              /* TODO */
+            | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK localdatacont
 ;
 
 commlist:
