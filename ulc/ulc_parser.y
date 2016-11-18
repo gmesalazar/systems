@@ -24,7 +24,7 @@ extern int yylineno;
 %}
 
 %union{
-    char id[100];
+    char* id;
     long litnum;
     TType     type;
     TValue    litv;
@@ -65,7 +65,9 @@ prog:
 ;
 
 funcvardecl: /* empty or */
-           | TK_DATA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl TK_SCOLON funcvardecl
+           | TK_DATA TK_NAME {
+                add_symbol($2, Sym_Data, alloc_data());
+             } vardecl TK_SCOLON funcvardecl
            | TK_DATA TK_NAME TK_ASSIGN expr {
                 add_symbol($2, Sym_Data, alloc_data());
                 check_gen_code(STO, $2);
@@ -216,7 +218,7 @@ unexpr:
 ;
 
 lvalexpr:
-          TK_NAME {strlcpy($<id>$, $1, 100);}
+          TK_NAME {$<id>$ = strdup($1);}
         | TK_NAME TK_LBRACK expr TK_RBRACK
 ;
 

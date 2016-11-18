@@ -11,8 +11,9 @@ extern int yydebug = 1;
 #endif
 
 static int compile(const char*);
+static void show_help();
 
-/* Dump bytecodes to standard out? */
+/* Print bytecodes to standard out? */
 static bool stdoutFlag = false;
 
 int main(int argc, char *argv[]) {
@@ -20,12 +21,13 @@ int main(int argc, char *argv[]) {
 
 	setprogname(argv[0]);
 
-	while ((opt = getopt(argc, argv, "s")) != -1) {
+	while ((opt = getopt(argc, argv, "d")) != -1) {
 		switch(opt) {
-			case 's':
+			case 'd':
 				stdoutFlag = true;
 				break;
 			case '?':
+				show_help();
 				break;
 		}
 	}
@@ -57,7 +59,7 @@ compile(const char* source) {
 	yyparse();
 
 	if (stdoutFlag)
-		dump_code();
+		prnt_code();
 
 	fsz = strlen(source) + 2;
 	if (!(fout = calloc(1, fsz)))
@@ -65,7 +67,7 @@ compile(const char* source) {
 	strlcpy(fout, source, fsz);
 	strlcat(fout, "b", fsz);
 
-	dump_bcodes(fout);
+	save_code(fout);
 
 	if (yyin)
 		fclose(yyin);
@@ -73,4 +75,12 @@ compile(const char* source) {
 		free(fout);
 
 	return 0;
+}
+
+static void
+show_help()
+{
+	fprintf(stderr, "%s:  [-d] source file\n", getprogname());
+	fprintf(stderr, "\t-d: show debugging info\n");
+	exit(EXIT_FAILURE);
 }

@@ -23,7 +23,7 @@ L	[a-zA-Z]
 %%
 
 [ \t\n]+            ;
-"main"              {strlcpy(yylval.id, yytext, NAME_MLEN); return TK_MAIN;}
+"main"              {yylval.id = strdup(yytext); return TK_MAIN;}
 "data"              {return TK_DATA;}
 "func"              {return TK_FUNC;}
 ";"                 {return TK_SCOLON;}
@@ -60,7 +60,7 @@ L	[a-zA-Z]
 
 {D}+                {yylval.litnum = atol(yytext); return TK_LIT_NUM;}
 \"(\\.|[^\\"\n])*\" {yylval.litnum = (long) strdup(yytext); return TK_LIT_STR;}
-{L}({D}|{L})*       {strlcpy(yylval.id, yytext, NAME_MLEN); return TK_NAME;}
+{L}({D}|{L})*       {yylval.id = strdup(yytext); return TK_NAME;}
 .                   {}
 
 <INITIAL>"/*"       {BEGIN(COMMENT);}

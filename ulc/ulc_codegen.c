@@ -54,17 +54,21 @@ back_patch(int addr, OpCode op, long arg)
 }
 
 void
-dump_code()
+prnt_code()
 {
 	int i;
+	printf("CODE:\n");
 	printf("%-8s%-10s%-5s%-5s\n", "Opcode", "Name", "Arg1", "Arg2");
 	for(i = 0; i < code_offset; i++)
 		printf("%-8d%-10s%-5ld %-5ld\n", i, op_names[section_code[i].op],
-				section_code[i].arg1, section_code[i].arg2);
+			section_code[i].arg1, section_code[i].arg2);
+	printf("\nREGS:\n");
+	printf("data offset = %d\ncode offset = %d\nmain offset = %d\n",
+			data_offset, code_offset, main_offset);
 }
 
 void
-dump_bcodes(const char *fname)
+save_code(const char *fname)
 {
 	FILE *fd = NULL;
 	if (!(fd = fopen(fname, "w")))

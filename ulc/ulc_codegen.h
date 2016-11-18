@@ -10,8 +10,8 @@ int label_code();
 
 void gen_code(OpCode, long, long);
 void back_patch(int, OpCode, long);
-void dump_code();
-void dump_bcodes(const char*);
+void prnt_code();
+void save_code(const char*);
 void set_main_offset(int);
 
 #endif
