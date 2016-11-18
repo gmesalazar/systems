@@ -111,7 +111,7 @@ paramlistcont:
 ;
 
 block:
-       TK_LBRACE vardecllist commlist TK_RBRACE
+       TK_LBRACE {push_scope(label_data());} vardecllist commlist TK_RBRACE {pop_scope();}
      | TK_LBRACE TK_RBRACE
 ;
 
