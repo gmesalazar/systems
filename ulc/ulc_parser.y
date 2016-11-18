@@ -34,6 +34,7 @@ check_gen_code(OpCode opcode, const char *name)
                     break;
                 case Sym_Local:
                     gen_code(opcode, label_data(), s->addr);
+                    break;
             }
         }
 }
@@ -63,7 +64,6 @@ check_gen_code(OpCode opcode, const char *name)
 %token <lbls> TK_IF TK_WHILE
 %token TK_ELSE
 %token TK_ASSIGN
-%token TK_COND_IF TK_COND_ELSE
 %token TK_OR TK_AND TK_EQ TK_NEQ
 %token TK_LT TK_MT TK_LE TK_ME
 %token TK_ADD TK_SUB TK_MULT TK_DIV TK_MOD
@@ -210,20 +210,8 @@ expr:
     | TK_READ {gen_code(IN, -1, 0);}
 ;
 
-assignexpr: condexpr
+assignexpr: orexpr
           | lvalexpr TK_ASSIGN assignexpr {check_gen_code(STO, $<id>1);}
-;
-
-condexpr:
-           orexpr
-         | orexpr TK_COND_IF {
-              $<lbls>$.addr_goto_false = alloc_code();
-           } expr {
-              $<lbls>$.addr_goto = alloc_code();
-              back_patch($<lbls>3.addr_goto_false, JMPZ, label_code());
-           } TK_COND_ELSE condexpr {
-              back_patch($<lbls>5.addr_goto, JMP, label_code());
-           }
 ;
 
 orexpr:

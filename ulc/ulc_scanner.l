@@ -41,8 +41,6 @@ L	[a-zA-Z]
 "else"              {return TK_ELSE;}
 "while"             {return TK_WHILE;}
 "="                 {return TK_ASSIGN;}
-"?"                 {return TK_COND_IF;}
-":"                 {return TK_COND_ELSE;}
 "or"                {return TK_OR;}
 "and"               {return TK_AND;}
 "=="                {return TK_EQ;}
