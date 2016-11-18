@@ -99,7 +99,7 @@ fetch_exec_cycle()
 				break;
 			case IN:
 				if (ir.arg1 == -1)
-					scanf("%ld", section_data + sp);
+					scanf("%ld", section_data + ++sp);
 				else
 					scanf("%ld", section_data + ir.arg1 + ir.arg2);
 				break;
@@ -158,7 +158,7 @@ fetch_exec_cycle()
 				sp--;
 				break;
 			case DIV:
-				section_data[sp - 1] = section_data[sp - 1] * section_data[sp];
+				section_data[sp - 1] = section_data[sp - 1] / section_data[sp];
 				sp--;
 				break;
 			case MOD:
