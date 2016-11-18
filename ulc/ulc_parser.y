@@ -60,39 +60,45 @@ extern int yylineno;
 
 %%
 
-prog:
-     {push_scope(label_data());} funcvardecl progdecl {gen_code(HLT, 0, 0); pop_scope(); YYACCEPT;}
+prog: /* a program is made of...*/
+      {push_scope(label_data());}
+      /* data and function declarations followed by */
+      datadecl funcdecl
+      /* a program main declaration */
+      progdecl
+      {gen_code(HLT, 0, 0); pop_scope(); YYACCEPT;}
 ;
 
-funcvardecl: /* empty or */
-           | TK_DATA TK_NAME {
-                add_symbol($2, Sym_Data, alloc_data());
-             } vardecl TK_SCOLON funcvardecl
-           | TK_DATA TK_NAME TK_ASSIGN expr {
-                add_symbol($2, Sym_Data, alloc_data());
-                check_gen_code(STO, $2);
-             } vardecl TK_SCOLON funcvardecl
-             /* TODO */
-           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON funcvardecl
-           | TK_NAME TK_LPAREN {
-                add_symbol($1, Sym_Func, label_code());
-                push_scope(label_data()); // enter new scope before parameters decl
-             } paramlist TK_RPAREN block {pop_scope();} funcvardecl
-;
-
-progdecl:
-          TK_MAIN {add_symbol($1, Sym_Func, label_code()); set_main_offset(label_code());} block
-;
-
-vardecl: /* empty or */
-       | TK_COMMA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl
-       | TK_COMMA TK_NAME TK_ASSIGN expr {
+/* data declaration */
+datadecl: /* empty or */
+        | TK_DATA TK_NAME {
+            add_symbol($2, Sym_Data, alloc_data());
+          } datadeclcont TK_SCOLON datadecl
+        | TK_DATA TK_NAME TK_ASSIGN expr {
             add_symbol($2, Sym_Data, alloc_data());
             check_gen_code(STO, $2);
-         } vardecl
-         /* TODO */
-       | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl
+          } datadeclcont TK_SCOLON datadecl
+          /* TODO */
+        | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK datadeclcont TK_SCOLON datadecl
 ;
+
+datadeclcont: /* empty or */
+            | TK_COMMA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} datadeclcont
+            | TK_COMMA TK_NAME TK_ASSIGN expr {
+                add_symbol($2, Sym_Data, alloc_data());
+                check_gen_code(STO, $2);
+              } datadeclcont
+              /* TODO */
+            | TK_COMMA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK datadeclcont
+;
+
+/* functions */
+funcdecl: /* empty or */
+        | TK_NAME TK_LPAREN {
+            add_symbol($1, Sym_Func, label_code());
+            push_scope(label_data()); // enter new scope before parameters decl
+          } paramlist TK_RPAREN block {pop_scope();} funcdecl
+
 
 paramlist: /* empty or */
          | paramlistcont
@@ -112,18 +118,22 @@ paramlistcont:
              | TK_DATA TK_NAME TK_LBRACK TK_RBRACK TK_COMMA paramlistcont
 ;
 
+progdecl:
+          TK_MAIN {add_symbol($1, Sym_Func, label_code()); set_main_offset(label_code());} block
+;
+
 block:
        TK_LBRACE {push_scope(label_data());} vardecllist commlist TK_RBRACE {pop_scope();}
      | TK_LBRACE TK_RBRACE
 ;
 
 vardecllist: /* empty or */
-           | TK_DATA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} vardecl TK_SCOLON vardecllist
+           | TK_DATA TK_NAME {add_symbol($2, Sym_Data, alloc_data());} datadeclcont TK_SCOLON vardecllist
            | TK_DATA TK_NAME TK_ASSIGN expr {
                 add_symbol($2, Sym_Data, alloc_data());
                 check_gen_code(STO, $2);
-             } vardecl TK_SCOLON vardecllist
-           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK vardecl TK_SCOLON vardecllist {
+             } datadeclcont TK_SCOLON vardecllist
+           | TK_DATA TK_NAME TK_LBRACK TK_LIT_NUM TK_RBRACK datadeclcont TK_SCOLON vardecllist {
                 add_symbol($2, Sym_Data, alloc_data());
              }
 ;
