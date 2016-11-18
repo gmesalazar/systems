@@ -1,0 +1,10 @@
+/*
+ * Test arithmetic operators
+ */
+main {
+	data a = read, b = read;
+	write a + b;
+	write a - b;
+	write a * b;
+	write a / 2;
+}
